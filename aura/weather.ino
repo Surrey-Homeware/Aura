@@ -145,9 +145,9 @@ String hour_of_day(int hour) {
 
   if (use_24_hour) {
     if (hour < 10)
-      return String("0") + String(hour);
+      return String("0") + String(hour) + String(":00"); // Nicer 24hr formatting
     else
-      return String(hour);
+      return String(hour) + String(":00"); // Nicer 24hr formatting
   } else {
     if(hour == 0)   return String("12am");
     if(hour == 12)  return String("Noon");
