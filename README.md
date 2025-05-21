@@ -13,10 +13,12 @@ The icons are not included in that license. See "Thanks" below for details on th
 
 ### How to compile:
 
-1. Configure Arduino IDE for "esp32" board with a device type of "ESP32 Dev Module"
+1. Configure Arduino IDE 
+    1. for "esp32" board with a device type of "ESP32 Dev Module" and
+    1. set "Tools -> Partition Scheme" to "Huge App (3MB No OTA/1MB SPIFFS)"
 1. Install the libraries below in Arduino IDE
 1. Put the source code folders that are in this folder in ~/Documents/Arduino/
-  1. Note the included config files for lvgl and TFT_eSPI need to be dropped in their respective folders
+    1. Note the included config files for lvgl and TFT_eSPI need to be dropped in their respective folders
 1. Install and run
 
 ### Libraries required to compile:
