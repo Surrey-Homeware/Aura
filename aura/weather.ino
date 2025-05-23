@@ -30,31 +30,16 @@
 #define SETTINGS_ROW_3_Y 70
 #define SETTINGS_ROW_4_Y 100
 
-#undef __MAC_COLORS__
-
-#ifdef __MAC_COLORS__
-  #define WIN_BG_COLOR lv_palette_main(LV_PALETTE_GREEN)
-  #define WIN_BG_GRAD_COLOR 0xa6cdec
-  #define TEXT_DEFAULT_LABEL 0xFFFFFF
-  #define TEXT_FEELS_LIKE 0xe4ffff
-  #define TEXT_FORECAST 0xe4ffff
-  #define BOX_DAILY 0x5e9bc8
-  #define BOX_HOURLY 0x5e9bc8
-  #define TEXT_CLOCK 0xb9ecff
-  #define TEXT_DAILY_LOW 0xb9ecff
-  #define TEXT_PROBABILITY 0xb9ecff
-#else
-  #define WIN_BG_COLOR 0x4c8cb9
-  #define WIN_BG_GRAD_COLOR 0xa6cdec
-  #define TEXT_DEFAULT_LABEL 0xFFFFFF
-  #define TEXT_FEELS_LIKE 0xe4ffff
-  #define TEXT_FORECAST 0xe4ffff
-  #define BOX_DAILY 0x5e9bc8
-  #define BOX_HOURLY 0x5e9bc8
-  #define TEXT_CLOCK 0xb9ecff
-  #define TEXT_DAILY_LOW 0xb9ecff
-  #define TEXT_PROBABILITY 0xb9ecff
-#endif
+#define WIN_BG_COLOR 0x4c8cb9
+#define WIN_BG_GRAD_COLOR 0xa6cdec
+#define TEXT_DEFAULT_LABEL 0xFFFFFF
+#define TEXT_FEELS_LIKE 0xe4ffff
+#define TEXT_FORECAST 0xe4ffff
+#define BOX_DAILY 0x5e9bc8
+#define BOX_HOURLY 0x5e9bc8
+#define TEXT_CLOCK 0xb9ecff
+#define TEXT_DAILY_LOW 0xb9ecff
+#define TEXT_PROBABILITY 0xb9ecff
 
 SPIClass touchscreenSPI = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
