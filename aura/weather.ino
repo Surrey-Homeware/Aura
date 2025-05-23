@@ -25,6 +25,37 @@
 #define DEFAULT_CAPTIVE_SSID "Aura"
 #define UPDATE_INTERVAL 600000UL  // 10 minutes
 
+#define SETTINGS_ROW_1_Y 0
+#define SETTINGS_ROW_2_Y 35
+#define SETTINGS_ROW_3_Y 70
+#define SETTINGS_ROW_4_Y 100
+
+#undef __MAC_COLORS__
+
+#ifdef __MAC_COLORS__
+  #define WIN_BG_COLOR lv_palette_main(LV_PALETTE_GREEN)
+  #define WIN_BG_GRAD_COLOR 0xa6cdec
+  #define TEXT_DEFAULT_LABEL 0xFFFFFF
+  #define TEXT_FEELS_LIKE 0xe4ffff
+  #define TEXT_FORECAST 0xe4ffff
+  #define BOX_DAILY 0x5e9bc8
+  #define BOX_HOURLY 0x5e9bc8
+  #define TEXT_CLOCK 0xb9ecff
+  #define TEXT_DAILY_LOW 0xb9ecff
+  #define TEXT_PROBABILITY 0xb9ecff
+#else
+  #define WIN_BG_COLOR 0x4c8cb9
+  #define WIN_BG_GRAD_COLOR 0xa6cdec
+  #define TEXT_DEFAULT_LABEL 0xFFFFFF
+  #define TEXT_FEELS_LIKE 0xe4ffff
+  #define TEXT_FORECAST 0xe4ffff
+  #define BOX_DAILY 0x5e9bc8
+  #define BOX_HOURLY 0x5e9bc8
+  #define TEXT_CLOCK 0xb9ecff
+  #define TEXT_DAILY_LOW 0xb9ecff
+  #define TEXT_PROBABILITY 0xb9ecff
+#endif
+
 SPIClass touchscreenSPI = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 uint32_t draw_buf[DRAW_BUF_SIZE / 4];
@@ -41,6 +72,11 @@ static String location = String(LOCATION_DEFAULT);
 static char dd_opts[512];
 static DynamicJsonDocument geoDoc(8 * 1024);
 static JsonArray geoResults;
+static bool use_night_mode = false;
+static bool in_night_mode = false; // are we currently in night mode?
+static uint8_t night_mode_start = 22;  // 10pm
+static uint8_t night_mode_end = 6; // 6am
+static uint8_t night_mode_mode = 1; // default to "dim", 0 = "off"
 
 // UI components
 static lv_obj_t *lbl_today_temp;
@@ -49,6 +85,7 @@ static lv_obj_t *img_today_icon;
 static lv_obj_t *lbl_forecast;
 static lv_obj_t *box_daily;
 static lv_obj_t *box_hourly;
+static lv_obj_t *box_night_mode;
 static lv_obj_t *lbl_daily_day[7];
 static lv_obj_t *lbl_daily_high[7];
 static lv_obj_t *lbl_daily_low[7];
@@ -68,6 +105,15 @@ static lv_obj_t *location_win = nullptr;
 static lv_obj_t *unit_switch;
 static lv_obj_t *clock_24hr_switch;
 static lv_obj_t *lbl_clock;
+static lv_obj_t *night_mode_switch;
+static lv_obj_t *night_mode_start_dd;
+static lv_obj_t *night_mode_end_dd;
+static lv_obj_t *night_mode_mode_dd;
+
+static lv_obj_t *night_mode_switch;
+static lv_obj_t *night_mode_start_dd;
+static lv_obj_t *night_mode_end_dd;
+static lv_obj_t *night_mode_mode_dd;
 
 // Weather icons
 LV_IMG_DECLARE(icon_blizzard);
@@ -133,6 +179,12 @@ static void settings_event_handler(lv_event_t *e);
 const lv_img_dsc_t *choose_image(int wmo_code, int is_day);
 const lv_img_dsc_t *choose_icon(int wmo_code, int is_day);
 
+static char *night_mode_dd_24h_options = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23";
+static char *night_mode_dd_12h_options = "12am\n1am\n2am\n3am\n4am\n5am\n6am\n7am\n8am\n9am\n10am\n11am\n12pm\n1pm\n2pm\n3pm\n4pm\n5pm\n6pm\n7pm\n8pm\n9pm\n10pm\n11pm";
+static char *night_mode_mode_dd_options = "Off\nDim";
+static uint8_t night_mode_brightness_options[2] = {0,5};
+
+static lv_timer_t *night_mode_start_timer = nullptr, *night_mode_end_timer = nullptr, *night_mode_resume_timer = nullptr;
 
 int day_of_week(int y, int m, int d) {
   static const int t[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
@@ -176,6 +228,117 @@ String urlencode(const String &str) {
     }
   }
   return encoded;
+}
+
+// 0 = midnight
+// if end > start then delta = end - start
+// if end < start then end is "tomorrow". add 24hrs to end and delta = new end - start
+int hour_delta(uint8_t start, uint8_t end) {
+  if ( end > start )
+    return end - start;
+  else if ( end < start )
+    return ( end + 24 ) - start;
+  else
+    return 0; // equal
+}
+
+// if we are no longer in night mode then kill the timers
+static void cancel_night_mode() {
+  if (night_mode_start_timer){
+    lv_timer_delete(night_mode_start_timer);
+    night_mode_start_timer = nullptr;
+  }
+  if (night_mode_end_timer) {
+    lv_timer_delete(night_mode_end_timer);
+    night_mode_end_timer = nullptr;
+  }
+  if (night_mode_resume_timer) {
+    lv_timer_delete(night_mode_resume_timer);
+    night_mode_resume_timer = nullptr;
+  }
+
+  in_night_mode = false;
+  lv_obj_add_flag(box_night_mode, LV_OBJ_FLAG_HIDDEN);
+}
+
+// There are two timers used to track the start and end of "night mode", however only one is active at any time
+// Both timers are setup as single shot timers - and after each fires the last thing they do is setup the next one
+// Eg when the start timer fires and we enter "night mode" the start timer sets up the end timer, and vice-versa..
+static void set_night_mode_start_timer() {
+  struct tm timeinfo;
+  time_t current_time, timer_time;
+  uint32_t timer_value_ms;
+  int delta;
+
+  if (!use_night_mode) return ;
+  if (!getLocalTime(&timeinfo)) return;
+
+  current_time = timer_time = mktime(&timeinfo);
+
+  delta = hour_delta(timeinfo.tm_hour, night_mode_start);
+
+  if (delta) {
+    timeinfo.tm_hour += delta;
+    timeinfo.tm_min = 0; // top of the hour
+    timeinfo.tm_sec = 0; // top of the hour
+    timer_time = mktime(&timeinfo);
+    timer_value_ms = (timer_time - current_time) * 1000;
+  }
+  else
+    timer_value_ms = 1000;  // wait a second when we are in night mode window
+
+  night_mode_start_timer = lv_timer_create(night_mode_start_timer_cb, timer_value_ms, NULL);
+  lv_timer_set_repeat_count(night_mode_start_timer, 1); // fire once, then delete timer
+  lv_timer_set_auto_delete(night_mode_start_timer, true);
+}
+
+static void set_night_mode_end_timer() {
+  struct tm timeinfo;
+  time_t current_time, timer_time;
+  uint32_t timer_value_ms;
+  int delta;
+
+  if (!use_night_mode) return ;
+  if (!getLocalTime(&timeinfo)) return;
+
+  current_time = timer_time = mktime(&timeinfo);
+
+  delta = hour_delta(timeinfo.tm_hour, night_mode_end);
+
+  timeinfo.tm_hour += delta;
+  timeinfo.tm_min = 0; // top of the hour
+  timeinfo.tm_sec = 0; // top of the hour
+  timer_time = mktime(&timeinfo);
+  timer_value_ms = (timer_time - current_time) * 1000;
+
+  night_mode_end_timer = lv_timer_create(night_mode_end_timer_cb, timer_value_ms, NULL);
+  lv_timer_set_repeat_count(night_mode_end_timer, 1); // fire once, then delete timer
+  lv_timer_set_auto_delete(night_mode_end_timer, true);
+}
+
+// Enter night mode and setup the timer to exit night mode
+static void night_mode_start_timer_cb(lv_timer_t *timer) {
+  analogWrite(LCD_BACKLIGHT_PIN, night_mode_brightness_options[night_mode_mode]);
+
+  in_night_mode = true;
+
+  lv_obj_clear_flag(box_night_mode, LV_OBJ_FLAG_HIDDEN);
+
+  set_night_mode_end_timer();
+  night_mode_start_timer = nullptr;
+}
+
+// Leave night mode and setup the timer for the next night mode entry
+static void night_mode_end_timer_cb(lv_timer_t *timer) {
+  uint32_t brightness = prefs.getUInt("brightness", 128);
+  analogWrite(LCD_BACKLIGHT_PIN, brightness);
+
+  in_night_mode = false;
+
+  lv_obj_add_flag(box_night_mode, LV_OBJ_FLAG_HIDDEN);
+
+  set_night_mode_start_timer();
+  night_mode_end_timer = nullptr;
 }
 
 static void update_clock(lv_timer_t *timer) {
@@ -267,6 +430,10 @@ void setup() {
   uint32_t brightness = prefs.getUInt("brightness", 255);
   use_24_hour = prefs.getBool("use24Hour", false);
   analogWrite(LCD_BACKLIGHT_PIN, brightness);
+  use_night_mode = prefs.getBool("nightMode", false);
+  night_mode_start = prefs.getUChar("nightModeStart", 22);
+  night_mode_end = prefs.getUChar("nightModeEnd", 6);
+  night_mode_mode = prefs.getUChar("nightModeMode",1);
 
   // Check for Wi-Fi config and request it if not available
   WiFiManager wm;
@@ -278,6 +445,8 @@ void setup() {
   lv_obj_clean(lv_scr_act());
   create_ui();
   fetch_and_update_weather();
+
+  set_night_mode_start_timer();
 }
 
 void flush_wifi_splashscreen(uint32_t ms = 200) {
@@ -309,8 +478,8 @@ void loop() {
 void wifi_splash_screen() {
   lv_obj_t *scr = lv_scr_act();
   lv_obj_clean(scr);
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x4c8cb9), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(0xa6cdec), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(scr, lv_color_hex(WIN_BG_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(WIN_BG_GRAD_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_grad_dir(scr, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -335,8 +504,8 @@ void wifi_splash_screen() {
 
 void create_ui() {
   lv_obj_t *scr = lv_scr_act();
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x4c8cb9), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(0xa6cdec), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(scr, lv_color_hex(WIN_BG_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(WIN_BG_GRAD_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_grad_dir(scr, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -349,7 +518,7 @@ void create_ui() {
 
   static lv_style_t default_label_style;
   lv_style_init(&default_label_style);
-  lv_style_set_text_color(&default_label_style, lv_color_hex(0xFFFFFF));
+  lv_style_set_text_color(&default_label_style, lv_color_hex(TEXT_DEFAULT_LABEL));
   lv_style_set_text_opa(&default_label_style, LV_OPA_COVER);
 
   lbl_today_temp = lv_label_create(scr);
@@ -361,19 +530,19 @@ void create_ui() {
   lbl_today_feels_like = lv_label_create(scr);
   lv_label_set_text(lbl_today_feels_like, "Feels Like --°C");
   lv_obj_set_style_text_font(lbl_today_feels_like, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_text_color(lbl_today_feels_like, lv_color_hex(0xe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(lbl_today_feels_like, lv_color_hex(TEXT_FEELS_LIKE), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_today_feels_like, LV_ALIGN_TOP_MID, 45, 75);
 
   lbl_forecast = lv_label_create(scr);
   lv_label_set_text(lbl_forecast, "SEVEN DAY FORECAST");
   lv_obj_set_style_text_font(lbl_forecast, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_text_color(lbl_forecast, lv_color_hex(0xe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(lbl_forecast, lv_color_hex(TEXT_FORECAST), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_forecast, LV_ALIGN_TOP_LEFT, 20, 110);
 
   box_daily = lv_obj_create(scr);
   lv_obj_set_size(box_daily, 220, 180);
   lv_obj_align(box_daily, LV_ALIGN_TOP_LEFT, 10, 135);
-  lv_obj_set_style_bg_color(box_daily, lv_color_hex(0x5e9bc8), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(box_daily, lv_color_hex(BOX_DAILY), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_opa(box_daily, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_radius(box_daily, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_border_width(box_daily, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -398,7 +567,7 @@ void create_ui() {
     lv_obj_align(lbl_daily_high[i], LV_ALIGN_TOP_RIGHT, 0, i * 24);
 
     lv_label_set_text(lbl_daily_low[i], "");
-    lv_obj_set_style_text_color(lbl_daily_low[i], lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(lbl_daily_low[i], lv_color_hex(TEXT_DAILY_LOW), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(lbl_daily_low[i], &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_align(lbl_daily_low[i], LV_ALIGN_TOP_RIGHT, -50, i * 24);
 
@@ -409,7 +578,7 @@ void create_ui() {
   box_hourly = lv_obj_create(scr);
   lv_obj_set_size(box_hourly, 220, 180);
   lv_obj_align(box_hourly, LV_ALIGN_TOP_LEFT, 10, 135);
-  lv_obj_set_style_bg_color(box_hourly, lv_color_hex(0x5e9bc8), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(box_hourly, lv_color_hex(BOX_HOURLY), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_opa(box_hourly, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_radius(box_hourly, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_border_width(box_hourly, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -434,7 +603,7 @@ void create_ui() {
     lv_obj_align(lbl_hourly_temp[i], LV_ALIGN_TOP_RIGHT, 0, i * 24);
 
     lv_label_set_text(lbl_precipitation_probability[i], "");
-    lv_obj_set_style_text_color(lbl_precipitation_probability[i], lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(lbl_precipitation_probability[i], lv_color_hex(TEXT_PROBABILITY), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(lbl_precipitation_probability[i], &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_align(lbl_precipitation_probability[i], LV_ALIGN_TOP_RIGHT, -55, i * 24);
 
@@ -447,9 +616,18 @@ void create_ui() {
   // Create clock label in the top-right corner
   lbl_clock = lv_label_create(scr);
   lv_obj_set_style_text_font(lbl_clock, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_text_color(lbl_clock, lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(lbl_clock, lv_color_hex(TEXT_CLOCK), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_label_set_text(lbl_clock, "");
   lv_obj_align(lbl_clock, LV_ALIGN_TOP_RIGHT, -10, 5);
+
+  box_night_mode = lv_obj_create(scr);
+  lv_obj_set_size(box_night_mode, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_align(box_night_mode, LV_ALIGN_TOP_LEFT, 0, 0);
+  lv_obj_set_style_bg_color(box_night_mode, lv_color_hex(BOX_HOURLY), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_opa(box_night_mode, LV_OPA_MIN, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_event_cb(box_night_mode, box_night_mode_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_flag(box_night_mode, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(box_night_mode, LV_OBJ_FLAG_CLICKABLE);
 }
 
 void populate_results_dropdown() {
@@ -523,12 +701,25 @@ void daily_cb(lv_event_t *e) {
   lv_obj_clear_flag(box_hourly, LV_OBJ_FLAG_HIDDEN);
 }
 
+// wake up display
+// set timer to resume night mode
+// hide ourselves
+void box_night_mode_cb(lv_event_t *e) {
+  uint32_t brightness = prefs.getUInt("brightness", 128);
+  analogWrite(LCD_BACKLIGHT_PIN, brightness);
+  
+  night_mode_resume_timer = lv_timer_create(night_mode_resume_timer_cb, 5000, NULL); // resume in 5 seconds
+  lv_timer_set_repeat_count(night_mode_resume_timer, 1); // fire once, then delete timer
+  lv_timer_set_auto_delete(night_mode_resume_timer, true);
+
+  lv_obj_add_flag(box_night_mode, LV_OBJ_FLAG_HIDDEN);
+}
+
 void hourly_cb(lv_event_t *e) {
   lv_obj_add_flag(box_hourly, LV_OBJ_FLAG_HIDDEN);
   lv_label_set_text(lbl_forecast, "SEVEN DAY FORECAST");
   lv_obj_clear_flag(box_daily, LV_OBJ_FLAG_HIDDEN);
 }
-
 
 static void reset_wifi_event_handler(lv_event_t *e) {
   lv_obj_t *mbox = lv_msgbox_create(lv_scr_act());
@@ -640,8 +831,17 @@ void create_location_dialog() {
   lv_obj_center(lbl_cancel);
 }
 
+static void night_mode_resume_timer_cb(lv_timer_t *timer) {
+  analogWrite(LCD_BACKLIGHT_PIN, night_mode_brightness_options[night_mode_mode]);
+  lv_obj_clear_flag(box_night_mode, LV_OBJ_FLAG_HIDDEN);
+  night_mode_start_timer = nullptr;
+}
+
 void create_settings_window() {
   if (settings_win) return;
+
+  if (in_night_mode)
+    lv_timer_pause(night_mode_resume_timer);
 
   settings_win = lv_win_create(lv_scr_act());
   lv_obj_t *title = lv_win_add_title(settings_win, "Aura Settings");
@@ -650,13 +850,15 @@ void create_settings_window() {
 
   lv_obj_center(settings_win);
   lv_obj_set_width(settings_win, 240);
+  lv_obj_remove_flag(settings_win, LV_OBJ_FLAG_SCROLLABLE);
 
   lv_obj_t *cont = lv_win_get_content(settings_win);
+  lv_obj_remove_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
 
   // Brightness
   lv_obj_t *lbl_b = lv_label_create(cont);
   lv_label_set_text(lbl_b, "Brightness:");
-  lv_obj_align(lbl_b, LV_ALIGN_TOP_LEFT, 0, 10);
+  lv_obj_align(lbl_b, LV_ALIGN_TOP_LEFT, 0, SETTINGS_ROW_1_Y);
   lv_obj_t *slider = lv_slider_create(cont);
   lv_slider_set_range(slider, 10, 255);
   uint32_t saved_b = prefs.getUInt("brightness", 128);
@@ -671,25 +873,17 @@ void create_settings_window() {
     prefs.putUInt("brightness", v);
   }, LV_EVENT_VALUE_CHANGED, NULL);
 
-  lv_obj_t *lbl_loc_l = lv_label_create(cont);
-  lv_label_set_text(lbl_loc_l, "Location:");
-  lv_obj_align(lbl_loc_l, LV_ALIGN_TOP_LEFT, 0, 85);
-
-  lbl_loc = lv_label_create(cont);
-  lv_label_set_text(lbl_loc, location.c_str());
-  lv_obj_align_to(lbl_loc, lbl_loc_l, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
-
   lv_obj_t *btn_change_loc = lv_btn_create(cont);
-  lv_obj_align(btn_change_loc, LV_ALIGN_TOP_LEFT, 0, 130);
-  lv_obj_set_size(btn_change_loc, 100, 40);
+  lv_obj_align(btn_change_loc, LV_ALIGN_TOP_LEFT, 0, 145);
+  lv_obj_set_size(btn_change_loc, 215, 35);
   lv_obj_add_event_cb(btn_change_loc, change_location_event_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_t *lbl_chg = lv_label_create(btn_change_loc);
-  lv_label_set_text(lbl_chg, "Location");
+  lv_label_set_text(lbl_chg, location.c_str());
   lv_obj_center(lbl_chg);
 
   lv_obj_t *lbl_u = lv_label_create(cont);
   lv_label_set_text(lbl_u, "Use °F:");
-  lv_obj_align(lbl_u, LV_ALIGN_TOP_LEFT, 0, 48);
+  lv_obj_align(lbl_u, LV_ALIGN_TOP_LEFT, 0, SETTINGS_ROW_2_Y);
 
   unit_switch = lv_switch_create(cont);
   lv_obj_align_to(unit_switch, lbl_u, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
@@ -702,7 +896,7 @@ void create_settings_window() {
 
   lv_obj_t *lbl_24hr = lv_label_create(cont);
   lv_label_set_text(lbl_24hr, "24hr:");
-  lv_obj_align(lbl_24hr, LV_ALIGN_TOP_LEFT, 120, 48);
+  lv_obj_align(lbl_24hr, LV_ALIGN_TOP_LEFT, 120, SETTINGS_ROW_2_Y);
 
   clock_24hr_switch = lv_switch_create(cont);
   lv_obj_align_to(clock_24hr_switch, lbl_24hr, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
@@ -712,6 +906,47 @@ void create_settings_window() {
     lv_obj_clear_state(clock_24hr_switch, LV_STATE_CHECKED);
   }
   lv_obj_add_event_cb(clock_24hr_switch, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  // Create night mode label and switch
+  lv_obj_t *lbl_night_mode = lv_label_create(cont);
+  lv_label_set_text(lbl_night_mode, "Night mode:");
+  lv_obj_align(lbl_night_mode, LV_ALIGN_TOP_LEFT, 0, SETTINGS_ROW_3_Y);
+
+  night_mode_switch = lv_switch_create(cont);
+  lv_obj_align_to(night_mode_switch, lbl_night_mode, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
+  if (use_night_mode) {
+    lv_obj_add_state(night_mode_switch, LV_STATE_CHECKED);
+  } else {
+    lv_obj_clear_state(night_mode_switch, LV_STATE_CHECKED);
+  }
+  lv_obj_add_event_cb(night_mode_switch, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  night_mode_start_dd = lv_dropdown_create(cont);
+  lv_obj_set_width(night_mode_start_dd, 70);
+  lv_obj_align(night_mode_start_dd, LV_ALIGN_TOP_LEFT, 0, SETTINGS_ROW_4_Y);
+  lv_dropdown_set_options_static(night_mode_start_dd, use_24_hour?night_mode_dd_24h_options:night_mode_dd_12h_options);
+  lv_dropdown_set_selected(night_mode_start_dd, night_mode_start);
+  lv_obj_add_event_cb(night_mode_start_dd, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  night_mode_end_dd = lv_dropdown_create(cont);
+  lv_obj_set_width(night_mode_end_dd, 70);
+  lv_obj_align(night_mode_end_dd, LV_ALIGN_TOP_LEFT, 70, SETTINGS_ROW_4_Y);
+  lv_dropdown_set_options_static(night_mode_end_dd, use_24_hour?night_mode_dd_24h_options:night_mode_dd_12h_options);
+  lv_dropdown_set_selected(night_mode_end_dd, night_mode_end);
+  lv_obj_add_event_cb(night_mode_end_dd, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  night_mode_mode_dd = lv_dropdown_create(cont);
+  lv_obj_set_width(night_mode_mode_dd, 70);
+  lv_obj_align(night_mode_mode_dd, LV_ALIGN_TOP_LEFT, 145, SETTINGS_ROW_4_Y);
+  lv_dropdown_set_options_static(night_mode_mode_dd, night_mode_mode_dd_options);
+  lv_dropdown_set_selected(night_mode_mode_dd, night_mode_mode);
+  lv_obj_add_event_cb(night_mode_mode_dd, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  if (!use_night_mode) {
+    lv_obj_add_flag(night_mode_start_dd, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(night_mode_end_dd, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(night_mode_mode_dd, LV_OBJ_FLAG_HIDDEN);
+  }
 
   if (!kb) {
     kb = lv_keyboard_create(lv_scr_act());
@@ -725,8 +960,8 @@ void create_settings_window() {
   lv_obj_set_style_bg_color(btn_reset, lv_palette_main(LV_PALETTE_RED), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_bg_color(btn_reset, lv_palette_darken(LV_PALETTE_RED, 1), LV_PART_MAIN | LV_STATE_PRESSED);
   lv_obj_set_style_text_color(btn_reset, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_size(btn_reset, 100, 40);
-  lv_obj_align(btn_reset, LV_ALIGN_TOP_RIGHT, 0, 130);
+  lv_obj_set_size(btn_reset, 90, 40);
+  lv_obj_align(btn_reset, LV_ALIGN_BOTTOM_LEFT, 0, 0);
   lv_obj_add_event_cb(btn_reset, reset_wifi_event_handler, LV_EVENT_CLICKED, nullptr);
 
   lv_obj_t *lbl_reset = lv_label_create(btn_reset);
@@ -734,7 +969,7 @@ void create_settings_window() {
   lv_obj_center(lbl_reset);
 
   btn_close_obj = lv_btn_create(cont);
-  lv_obj_set_size(btn_close_obj, 80, 40);
+  lv_obj_set_size(btn_close_obj, 90, 40);
   lv_obj_align(btn_close_obj, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
   lv_obj_add_event_cb(btn_close_obj, settings_event_handler, LV_EVENT_CLICKED, NULL);
 
@@ -753,11 +988,52 @@ static void settings_event_handler(lv_event_t *e) {
 
   if (tgt == clock_24hr_switch && code == LV_EVENT_VALUE_CHANGED) {
     use_24_hour = lv_obj_has_state(clock_24hr_switch, LV_STATE_CHECKED);
+    lv_dropdown_set_options_static(night_mode_start_dd, use_24_hour?night_mode_dd_24h_options:night_mode_dd_12h_options);
+    lv_dropdown_set_options_static(night_mode_end_dd, use_24_hour?night_mode_dd_24h_options:night_mode_dd_12h_options);
+    lv_dropdown_set_selected(night_mode_start_dd, night_mode_start);
+    lv_dropdown_set_selected(night_mode_end_dd, night_mode_end);
+  }
+
+  // Save night mode switch changes
+  if (tgt == night_mode_switch && code == LV_EVENT_VALUE_CHANGED ) {
+    bool new_night_mode = lv_obj_has_state(night_mode_switch, LV_STATE_CHECKED);
+
+    if (!new_night_mode && use_night_mode && in_night_mode)
+      cancel_night_mode();
+
+    use_night_mode = new_night_mode;
+
+    if (use_night_mode) {
+      lv_obj_remove_flag(night_mode_start_dd, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_remove_flag(night_mode_end_dd, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_remove_flag(night_mode_mode_dd, LV_OBJ_FLAG_HIDDEN);
+    }
+    else {
+      lv_obj_add_flag(night_mode_start_dd, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(night_mode_end_dd, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(night_mode_mode_dd, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+
+  if (tgt == night_mode_start_dd && code == LV_EVENT_VALUE_CHANGED ){
+    night_mode_start = lv_dropdown_get_selected( night_mode_start_dd );
+  }
+
+  if (tgt == night_mode_end_dd && code == LV_EVENT_VALUE_CHANGED ){
+    night_mode_end = lv_dropdown_get_selected( night_mode_end_dd );
+  }
+
+  if (tgt == night_mode_mode_dd && code == LV_EVENT_VALUE_CHANGED ){
+    night_mode_mode = lv_dropdown_get_selected( night_mode_mode_dd );
   }
 
   if (tgt == btn_close_obj && code == LV_EVENT_CLICKED) {
     prefs.putBool("useFahrenheit", use_fahrenheit);
     prefs.putBool("use24Hour", use_24_hour);
+    prefs.putBool("nightMode", use_night_mode);
+    prefs.putUChar("nightModeStart", night_mode_start);
+    prefs.putUChar("nightModeEnd", night_mode_end);
+    prefs.putUChar("nightModeMode", night_mode_mode);
 
     lv_keyboard_set_textarea(kb, nullptr);
     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
@@ -766,6 +1042,11 @@ static void settings_event_handler(lv_event_t *e) {
     settings_win = nullptr;
 
     fetch_and_update_weather();
+
+    if (in_night_mode)
+      lv_timer_resume(night_mode_resume_timer);
+
+    set_night_mode_start_timer(); // set a new night mode timer
   }
 }
 
