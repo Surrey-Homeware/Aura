@@ -30,6 +30,19 @@ The icons are not included in that license. See "Thanks" below for details on th
 - XPT2046_Touchscreen 1.4
 - lvgl 9.2.2
 
+### Adding a new language
+
+1. Copy an existing locale file from `aura/` (for example `en.h`) and rename
+   it using your two-letter language code (`fr.h` for French, etc.).
+2. Translate all strings in the new file and update the weekday array.
+3. Declare your locale in `aura/locales.cpp` and extend
+   `get_locale_by_code()` in `aura/locales.cpp` so it returns your new
+   structure when the matching code is provided.
+4. Add the language name to the `locale_opts` string and update the selection
+   logic in `settings_event_handler` within `aura/weather.ino` to map the
+   dropdown index to the new locale code.
+5. Rebuild and flash the firmware.
+
 ### Thanks & Credits
 
 - Weather icons from https://github.com/mrdarrengriffin/google-weather-icons/tree/main/v2
