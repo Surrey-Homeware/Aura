@@ -8,6 +8,7 @@
 #include <XPT2046_Touchscreen.h>
 #include <Preferences.h>
 #include "esp_system.h"
+#include "locales.h"
 
 #define XPT2046_IRQ 36   // T_IRQ
 #define XPT2046_MOSI 32  // T_DIN
@@ -28,7 +29,9 @@
 SPIClass touchscreenSPI = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 uint32_t draw_buf[DRAW_BUF_SIZE / 4];
-static const char *weekdays[] = {"Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"};
+static const LocaleStrings *locale = &LOCALE_EN;
+static const char *const *weekdays = LOCALE_EN.weekdays;
+static char locale_code[8] = "en";
 int x, y, z;
 
 // Preferences
@@ -68,6 +71,13 @@ static lv_obj_t *location_win = nullptr;
 static lv_obj_t *unit_switch;
 static lv_obj_t *clock_24hr_switch;
 static lv_obj_t *lbl_clock;
+static lv_obj_t *locale_dd;
+
+void set_locale(const char *code) {
+  locale = get_locale_by_code(code);
+  weekdays = locale->weekdays;
+  strncpy(locale_code, code, sizeof(locale_code));
+}
 
 // Weather icons
 LV_IMG_DECLARE(icon_blizzard);
@@ -266,6 +276,8 @@ void setup() {
   location = prefs.getString("location", LOCATION_DEFAULT);
   uint32_t brightness = prefs.getUInt("brightness", 255);
   use_24_hour = prefs.getBool("use24Hour", false);
+  String loc_pref = prefs.getString("locale", "en");
+  set_locale(loc_pref.c_str());
   analogWrite(LCD_BACKLIGHT_PIN, brightness);
 
   // Check for Wi-Fi config and request it if not available
@@ -353,19 +365,19 @@ void create_ui() {
   lv_style_set_text_opa(&default_label_style, LV_OPA_COVER);
 
   lbl_today_temp = lv_label_create(scr);
-  lv_label_set_text(lbl_today_temp, "--°C");
+  lv_label_set_text(lbl_today_temp, "--\xC2\xB0C");
   lv_obj_set_style_text_font(lbl_today_temp, &lv_font_montserrat_42, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_today_temp, LV_ALIGN_TOP_MID, 45, 25);
   lv_obj_add_style(lbl_today_temp, &default_label_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   lbl_today_feels_like = lv_label_create(scr);
-  lv_label_set_text(lbl_today_feels_like, "Feels Like --°C");
+  lv_label_set_text(lbl_today_feels_like, locale->feels_like);
   lv_obj_set_style_text_font(lbl_today_feels_like, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_color(lbl_today_feels_like, lv_color_hex(0xe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_today_feels_like, LV_ALIGN_TOP_MID, 45, 75);
 
   lbl_forecast = lv_label_create(scr);
-  lv_label_set_text(lbl_forecast, "SEVEN DAY FORECAST");
+  lv_label_set_text(lbl_forecast, locale->seven_day_forecast);
   lv_obj_set_style_text_font(lbl_forecast, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_color(lbl_forecast, lv_color_hex(0xe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_forecast, LV_ALIGN_TOP_LEFT, 20, 110);
@@ -519,13 +531,13 @@ void screen_event_cb(lv_event_t *e) {
 
 void daily_cb(lv_event_t *e) {
   lv_obj_add_flag(box_daily, LV_OBJ_FLAG_HIDDEN);
-  lv_label_set_text(lbl_forecast, "HOURLY FORECAST");
+  lv_label_set_text(lbl_forecast, locale->hourly_forecast);
   lv_obj_clear_flag(box_hourly, LV_OBJ_FLAG_HIDDEN);
 }
 
 void hourly_cb(lv_event_t *e) {
   lv_obj_add_flag(box_hourly, LV_OBJ_FLAG_HIDDEN);
-  lv_label_set_text(lbl_forecast, "SEVEN DAY FORECAST");
+  lv_label_set_text(lbl_forecast, locale->seven_day_forecast);
   lv_obj_clear_flag(box_daily, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -544,7 +556,7 @@ static void reset_wifi_event_handler(lv_event_t *e) {
                      "reconfigure Wi-Fi credentials.");
   lv_msgbox_add_close_button(mbox);
 
-  lv_obj_t *btn_no = lv_msgbox_add_footer_button(mbox, "Cancel");
+  lv_obj_t *btn_no = lv_msgbox_add_footer_button(mbox, locale->cancel);
   lv_obj_t *btn_yes = lv_msgbox_add_footer_button(mbox, "Reset");
 
   lv_obj_set_style_bg_color(btn_yes, lv_palette_main(LV_PALETTE_RED), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -585,7 +597,7 @@ static void change_location_event_cb(lv_event_t *e) {
 
 void create_location_dialog() {
   location_win = lv_win_create(lv_scr_act());
-  lv_obj_t *title = lv_win_add_title(location_win, "Change Location");
+  lv_obj_t *title = lv_win_add_title(location_win, locale->change_location_title);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
   lv_obj_set_style_margin_left(title, 10, 0);
   lv_obj_set_size(location_win, 240, 320);
@@ -594,7 +606,7 @@ void create_location_dialog() {
   lv_obj_t *cont = lv_win_get_content(location_win);
 
   lv_obj_t *lbl = lv_label_create(cont);
-  lv_label_set_text(lbl, "City:");
+  lv_label_set_text(lbl, locale->city);
   lv_obj_align(lbl, LV_ALIGN_TOP_LEFT, 5, 10);
 
   loc_ta = lv_textarea_create(cont);
@@ -607,7 +619,7 @@ void create_location_dialog() {
   lv_obj_add_event_cb(loc_ta, ta_defocus_cb, LV_EVENT_DEFOCUSED, kb);
 
   lv_obj_t *lbl2 = lv_label_create(cont);
-  lv_label_set_text(lbl2, "Search Results");
+  lv_label_set_text(lbl2, locale->search_results);
   lv_obj_align(lbl2, LV_ALIGN_TOP_LEFT, 5, 50);
 
   results_dd = lv_dropdown_create(cont);
@@ -627,7 +639,7 @@ void create_location_dialog() {
   lv_obj_clear_flag(btn_close_loc, LV_OBJ_FLAG_CLICKABLE);
 
   lv_obj_t *lbl_close = lv_label_create(btn_close_loc);
-  lv_label_set_text(lbl_close, "Save");
+  lv_label_set_text(lbl_close, locale->save);
   lv_obj_center(lbl_close);
 
   lv_obj_t *btn_cancel_loc = lv_btn_create(cont);
@@ -636,7 +648,7 @@ void create_location_dialog() {
   lv_obj_add_event_cb(btn_cancel_loc, location_cancel_event_cb, LV_EVENT_CLICKED, &geoResults);
 
   lv_obj_t *lbl_cancel = lv_label_create(btn_cancel_loc);
-  lv_label_set_text(lbl_cancel, "Cancel");
+  lv_label_set_text(lbl_cancel, locale->cancel);
   lv_obj_center(lbl_cancel);
 }
 
@@ -644,7 +656,7 @@ void create_settings_window() {
   if (settings_win) return;
 
   settings_win = lv_win_create(lv_scr_act());
-  lv_obj_t *title = lv_win_add_title(settings_win, "Aura Settings");
+  lv_obj_t *title = lv_win_add_title(settings_win, locale->settings_title);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
   lv_obj_set_style_margin_left(title, 10, 0);
 
@@ -655,7 +667,7 @@ void create_settings_window() {
 
   // Brightness
   lv_obj_t *lbl_b = lv_label_create(cont);
-  lv_label_set_text(lbl_b, "Brightness:");
+  lv_label_set_text(lbl_b, locale->brightness);
   lv_obj_align(lbl_b, LV_ALIGN_TOP_LEFT, 0, 10);
   lv_obj_t *slider = lv_slider_create(cont);
   lv_slider_set_range(slider, 10, 255);
@@ -672,7 +684,7 @@ void create_settings_window() {
   }, LV_EVENT_VALUE_CHANGED, NULL);
 
   lv_obj_t *lbl_loc_l = lv_label_create(cont);
-  lv_label_set_text(lbl_loc_l, "Location:");
+  lv_label_set_text(lbl_loc_l, locale->location_label);
   lv_obj_align(lbl_loc_l, LV_ALIGN_TOP_LEFT, 0, 85);
 
   lbl_loc = lv_label_create(cont);
@@ -684,11 +696,11 @@ void create_settings_window() {
   lv_obj_set_size(btn_change_loc, 100, 40);
   lv_obj_add_event_cb(btn_change_loc, change_location_event_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_t *lbl_chg = lv_label_create(btn_change_loc);
-  lv_label_set_text(lbl_chg, "Location");
+  lv_label_set_text(lbl_chg, locale->location_button);
   lv_obj_center(lbl_chg);
 
   lv_obj_t *lbl_u = lv_label_create(cont);
-  lv_label_set_text(lbl_u, "Use °F:");
+  lv_label_set_text(lbl_u, locale->use_f);
   lv_obj_align(lbl_u, LV_ALIGN_TOP_LEFT, 0, 48);
 
   unit_switch = lv_switch_create(cont);
@@ -701,7 +713,7 @@ void create_settings_window() {
   lv_obj_add_event_cb(unit_switch, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
   lv_obj_t *lbl_24hr = lv_label_create(cont);
-  lv_label_set_text(lbl_24hr, "24hr:");
+  lv_label_set_text(lbl_24hr, locale->clock_24hr);
   lv_obj_align(lbl_24hr, LV_ALIGN_TOP_LEFT, 120, 48);
 
   clock_24hr_switch = lv_switch_create(cont);
@@ -730,8 +742,16 @@ void create_settings_window() {
   lv_obj_add_event_cb(btn_reset, reset_wifi_event_handler, LV_EVENT_CLICKED, nullptr);
 
   lv_obj_t *lbl_reset = lv_label_create(btn_reset);
-  lv_label_set_text(lbl_reset, "Reset Wi-Fi");
+  lv_label_set_text(lbl_reset, locale->reset_wifi);
   lv_obj_center(lbl_reset);
+
+  locale_dd = lv_dropdown_create(cont);
+  static const char *locale_opts = "English\nDeutsch";
+  lv_dropdown_set_options_static(locale_dd, locale_opts);
+  int sel = (strcmp(locale_code, "de") == 0) ? 1 : 0;
+  lv_dropdown_set_selected(locale_dd, sel);
+  lv_obj_align(locale_dd, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  lv_obj_add_event_cb(locale_dd, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
   btn_close_obj = lv_btn_create(cont);
   lv_obj_set_size(btn_close_obj, 80, 40);
@@ -739,7 +759,7 @@ void create_settings_window() {
   lv_obj_add_event_cb(btn_close_obj, settings_event_handler, LV_EVENT_CLICKED, NULL);
 
   lv_obj_t *lbl_btn = lv_label_create(btn_close_obj);
-  lv_label_set_text(lbl_btn, "Close");
+  lv_label_set_text(lbl_btn, locale->close);
   lv_obj_center(lbl_btn);
 }
 
@@ -753,6 +773,19 @@ static void settings_event_handler(lv_event_t *e) {
 
   if (tgt == clock_24hr_switch && code == LV_EVENT_VALUE_CHANGED) {
     use_24_hour = lv_obj_has_state(clock_24hr_switch, LV_STATE_CHECKED);
+  }
+
+  if (tgt == locale_dd && code == LV_EVENT_VALUE_CHANGED) {
+    uint16_t sel = lv_dropdown_get_selected(locale_dd);
+    const char *code_str = (sel == 1) ? "de" : "en";
+    set_locale(code_str);
+    prefs.putString("locale", code_str);
+    lv_obj_del(settings_win);
+    settings_win = nullptr;
+    lv_obj_clean(lv_scr_act());
+    create_ui();
+    fetch_and_update_weather();
+    return;
   }
 
   if (tgt == btn_close_obj && code == LV_EVENT_CLICKED) {
@@ -822,8 +855,8 @@ void fetch_and_update_weather() {
       Serial.println(utc_offset_seconds);
 
       char unit = use_fahrenheit ? 'F' : 'C';
-      lv_label_set_text_fmt(lbl_today_temp, "%.0f°%c", t_now, unit);
-      lv_label_set_text_fmt(lbl_today_feels_like, "Feels Like %.0f°%c", t_ap, unit);
+      lv_label_set_text_fmt(lbl_today_temp, "%.0f\xC2\xB0%c", t_now, unit);
+      lv_label_set_text_fmt(lbl_today_feels_like, "%s %.0f\xC2\xB0%c", locale->feels_like, t_ap, unit);
       lv_img_set_src(img_today_icon, choose_image(code_now, is_day));
 
       JsonArray times = doc["daily"]["time"].as<JsonArray>();
@@ -837,7 +870,7 @@ void fetch_and_update_weather() {
         int mon = atoi(date + 5);
         int dayd = atoi(date + 8);
         int dow = day_of_week(year, mon, dayd);
-        const char *dayStr = (i == 0) ? "Today" : weekdays[dow];
+        const char *dayStr = (i == 0) ? locale->today : weekdays[dow];
 
         float mn = tmin[i].as<float>();
         float mx = tmax[i].as<float>();
@@ -871,7 +904,7 @@ void fetch_and_update_weather() {
         }
 
         if (i == 0) {
-          lv_label_set_text(lbl_hourly[i], "Now");
+          lv_label_set_text(lbl_hourly[i], locale->now);
         } else {
           lv_label_set_text(lbl_hourly[i], hour_name.c_str());
         }
