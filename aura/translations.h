@@ -35,6 +35,7 @@ struct LocalizedStrings {
   const char* language_label;
   const char* weekdays[7];
   const char* use_night_mode;
+  const char* night_mode_brightness;
 };
 
 #define DEFAULT_CAPTIVE_SSID "Aura"
@@ -65,7 +66,8 @@ static const LocalizedStrings strings_en = {
   "reconfigure Wi-Fi credentials.",
   "Language:",
   {"Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"},
-  "Dim screen at night"
+  "Dim screen at night",
+  "Night brightness:"
 };
 
 static const LocalizedStrings strings_es = {
@@ -96,7 +98,8 @@ static const LocalizedStrings strings_es = {
   "credenciales Wi-Fi.",
   "Idioma:",
   {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"},
-  "Pantalla noche"
+  "Pantalla noche",
+  "Brillo nocturno:"
 };
 
 static const LocalizedStrings strings_de = {
@@ -129,7 +132,8 @@ static const LocalizedStrings strings_de = {
   "neu zu konfigurieren.",
   "Sprache:",
   {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"},
-  "Nacht-Dimmen"
+  "Nacht-Dimmen",
+  "Nacht-Helligkeit:"
 };
 
 static const LocalizedStrings strings_fr = {
@@ -162,7 +166,8 @@ static const LocalizedStrings strings_fr = {
   "les identifiants Wi-Fi.",
   "Langue:",
   {"Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"},
-  "Nuit écran"
+  "Nuit écran",
+  "Luminosité nuit:"
 };
 
 static const LocalizedStrings strings_tr = {
@@ -192,7 +197,8 @@ static const LocalizedStrings strings_tr = {
   "gerekecek.",
   "Dil:",
   {"Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"},
-  "Gece kısık"
+  "Gece kısık",
+  "Gece parlaklığı:"
 };
 
 static const LocalizedStrings strings_sv = {
@@ -226,7 +232,8 @@ static const LocalizedStrings strings_sv = {
   "autentiseringsuppgifter.",
   "Sprak:",
   {"Sön", "Man", "Tis", "Ons", "Tor", "Fre", "Lör"},
-  "Nattdämpning"
+  "Nattdämpning",
+  "Nattljusstyrka:"
 };
 
 static const LocalizedStrings strings_it = {
@@ -255,7 +262,8 @@ static const LocalizedStrings strings_it = {
   "riconfigurare le credenziali Wi-Fi.",
   "Lingua:",
   {"Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"},
-  "Schermo notte"
+  "Schermo notte",
+  "Luminosità notte:"
 };
 
 static const LocalizedStrings* get_strings(Language current_language) {
