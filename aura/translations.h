@@ -33,6 +33,8 @@ struct LocalizedStrings {
   const char* wifi_config;
   const char* reset_confirmation;
   const char* language_label;
+  const char* color_scheme_label;
+  const char* color_schemes[8]; // Blue, Red, Yellow, Orange, White, Black, Green, Pink
   const char* weekdays[7];
   const char* use_night_mode;
 };
@@ -64,6 +66,8 @@ static const LocalizedStrings strings_en = {
   " with your phone or browser to "
   "reconfigure Wi-Fi credentials.",
   "Language:",
+  "Color scheme:",
+  {"Blue", "Red", "Yellow", "Orange", "White", "Black", "Green", "Pink"},
   {"Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"},
   "Dim screen at night"
 };
@@ -95,6 +99,8 @@ static const LocalizedStrings strings_es = {
   "para reconfigurar las\n"
   "credenciales Wi-Fi.",
   "Idioma:",
+  "Esquema de color:",
+  {"Azul", "Rojo", "Amarillo", "Naranja", "Blanco", "Negro", "Verde", "Rosa"},
   {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"},
   "Pantalla noche"
 };
@@ -128,6 +134,8 @@ static const LocalizedStrings strings_de = {
   "Wi-Fi Zugangsdaten\n"
   "neu zu konfigurieren.",
   "Sprache:",
+  "Farbschema:",
+  {"Blau", "Rot", "Gelb", "Orange", "Weiß", "Schwarz", "Grün", "Rosa"},
   {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"},
   "Nacht-Dimmen"
 };
@@ -161,6 +169,8 @@ static const LocalizedStrings strings_fr = {
   "navigateur pour reconfigurer\n"
   "les identifiants Wi-Fi.",
   "Langue:",
+  "Schéma de couleur:",
+  {"Bleu", "Rouge", "Jaune", "Orange", "Blanc", "Noir", "Vert", "Rose"},
   {"Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"},
   "Nuit écran"
 };
@@ -191,22 +201,24 @@ static const LocalizedStrings strings_tr = {
   " SSID'sine tekrar bağlanmaniz\n"
   "gerekecek.",
   "Dil:",
+  "Renk şeması:",
+  {"Mavi", "Kırmızı", "Sarı", "Turuncu", "Beyaz", "Siyah", "Yeşil", "Pembe"},
   {"Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"},
   "Gece kısık"
 };
 
 static const LocalizedStrings strings_sv = {
   "--°C", "Känns som", "7-DAGARS PROGNOS", "TIMPROGNOS",
-  "Idag", "Nu", "", "", "Middag", "Ogiltig timme",
+  "Idag", "Nu", "fm", "em", "Middag", "Ogiltig timme",
   "Ljusstyrka:", "Plats:", "Använd °F:", "24h:",
-  "Spara", "Avbryt", "Stäng", "Plats", "Aterställ Wi-Fi",
-  "Aterställ", "Andra plats", "Aura-inställningar",
+  "Spara", "Avbryt", "Stäng", "Plats", "Återställ Wi-Fi",
+  "Återställ", "Ändra plats", "Aura-inställningar",
   "Stad:", "Sökresultat", "t.ex. Stockholm",
   "Wi-Fi-konfiguration:\n\n"
   "Anslut din telefon\n"
   "eller laptop till den\n"
   "tillfälliga Wi-Fi-\n"
-  "atkomstpunkten "
+  "åtkomstpunkten "
   DEFAULT_CAPTIVE_SSID
   "\n"
   "för att konfigurera.\n\n"
@@ -215,18 +227,20 @@ static const LocalizedStrings strings_sv = {
   "efter anslutning, besök\n"
   "http://192.168.4.1\n"
   "i din webbläsare.",
-  "Ar du säker pa att du vill\n"
-  "aterställa Wi-Fi-\n"
+  "Är du säker på att du vill\n"
+  "återställa Wi-Fi-\n"
   "autentiseringsuppgifter?\n\n"
-  "Du maste ateransluta till\n"
+  "Du måste återansluta till\n"
   "SSID " DEFAULT_CAPTIVE_SSID
   " med din telefon eller\n"
   "webbläsare för att\n"
   "omkonfigurera Wi-Fi-\n"
   "autentiseringsuppgifter.",
-  "Sprak:",
-  {"Sön", "Man", "Tis", "Ons", "Tor", "Fre", "Lör"},
-  "Nattdämpning"
+  "Språk:",
+  "Färgschema:",
+  {"Blå", "Röd", "Gul", "Orange", "Vit", "Svart", "Grön", "Rosa"},
+  {"Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"},
+  "Dimma nattetid"
 };
 
 static const LocalizedStrings strings_it = {
@@ -254,6 +268,8 @@ static const LocalizedStrings strings_it = {
   "con il tuo telefono o browser a "
   "riconfigurare le credenziali Wi-Fi.",
   "Lingua:",
+  "Schema colore:",
+  {"Blu", "Rosso", "Giallo", "Arancione", "Bianco", "Nero", "Verde", "Rosa"},
   {"Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"},
   "Schermo notte"
 };

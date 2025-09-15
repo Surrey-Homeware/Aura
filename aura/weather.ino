@@ -30,33 +30,104 @@
 #define NIGHT_MODE_START_HOUR 22
 #define NIGHT_MODE_END_HOUR 6
 
-LV_FONT_DECLARE(lv_font_montserrat_latin_12);
-LV_FONT_DECLARE(lv_font_montserrat_latin_14);
-LV_FONT_DECLARE(lv_font_montserrat_latin_16);
-LV_FONT_DECLARE(lv_font_montserrat_latin_20);
-LV_FONT_DECLARE(lv_font_montserrat_latin_42);
+// International Montserrat fonts with comprehensive UTF-8 support
+LV_FONT_DECLARE(lv_font_montserrat_international_12);
+LV_FONT_DECLARE(lv_font_montserrat_international_14);
+LV_FONT_DECLARE(lv_font_montserrat_international_16);
+LV_FONT_DECLARE(lv_font_montserrat_international_20);
+LV_FONT_DECLARE(lv_font_montserrat_international_42);
 
-static Language current_language = LANG_EN;
-
-// Font selection based on language
 const lv_font_t* get_font_12() {
-  return &lv_font_montserrat_latin_12;
+  return &lv_font_montserrat_international_12;
 }
 
 const lv_font_t* get_font_14() {
-  return &lv_font_montserrat_latin_14;
+  return &lv_font_montserrat_international_14;
 }
 
 const lv_font_t* get_font_16() {
-  return &lv_font_montserrat_latin_16;
+  return &lv_font_montserrat_international_16;
 }
 
 const lv_font_t* get_font_20() {
-  return &lv_font_montserrat_latin_20;
+  return &lv_font_montserrat_international_20;
 }
 
 const lv_font_t* get_font_42() {
-  return &lv_font_montserrat_latin_42;
+  return &lv_font_montserrat_international_42;
+}
+
+static Language current_language = LANG_EN;
+
+// Color schemes
+enum ColorScheme { 
+  COLOR_BLUE = 0,    // Default blue scheme
+  COLOR_RED = 1, 
+  COLOR_YELLOW = 2, 
+  COLOR_ORANGE = 3, 
+  COLOR_WHITE = 4, 
+  COLOR_BLACK = 5, 
+  COLOR_GREEN = 6,
+  COLOR_PINK = 7 
+};
+
+struct ColorSchemeData {
+  uint32_t bg_gradient_start;    // Main background gradient start
+  uint32_t bg_gradient_end;      // Main background gradient end
+  uint32_t box_background;       // Forecast box background
+  uint32_t text_primary;         // Main text color (temperature)
+  uint32_t text_secondary;       // Secondary text color (feels like, forecast labels)
+  uint32_t text_tertiary;        // Tertiary text color (precipitation, low temps)
+};
+
+static const ColorSchemeData color_schemes[] = {
+  // Blue (default) - preserve existing colors
+  { 0x4c8cb9, 0xa6cdec, 0x5e9bc8, 0xFFFFFF, 0xe4ffff, 0xb9ecff },
+  // Red (proper red colors)
+  { 0xB22222, 0xFF6B6B, 0xDC143C, 0xFFFFFF, 0xffe4e4, 0xffcccc },
+  // Yellow (proper bright yellow)
+  { 0xFFD700, 0xFFF700, 0xFFE55C, 0x000000, 0x333300, 0x666600 },
+  // Orange (proper orange, not brown)
+  { 0xFF8C00, 0xFFA500, 0xFF7F50, 0xFFFFFF, 0xfff0e4, 0xffe0cc },
+  // White
+  { 0xf0f0f0, 0xffffff, 0xe0e0e0, 0x000000, 0x333333, 0x666666 },
+  // Black
+  { 0x1a1a1a, 0x404040, 0x2a2a2a, 0xFFFFFF, 0xe0e0e0, 0xc0c0c0 },
+  // Green
+  { 0x4c8b4c, 0xa6eca6, 0x5ec85e, 0xFFFFFF, 0xe4ffe4, 0xb9ffb9 },
+  // Pink (the old "red" that was actually pink)
+  { 0xFF69B4, 0xFFB6C1, 0xFF1493, 0xFFFFFF, 0xffe4f0, 0xffccdd }
+};
+
+static ColorScheme current_color_scheme = COLOR_BLUE;
+
+// Color scheme helper functions
+const ColorSchemeData* get_current_colors() {
+  return &color_schemes[current_color_scheme];
+}
+
+void apply_background_colors(lv_obj_t* obj) {
+  const ColorSchemeData* colors = get_current_colors();
+  lv_obj_set_style_bg_color(obj, lv_color_hex(colors->bg_gradient_start), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_grad_color(obj, lv_color_hex(colors->bg_gradient_end), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+void apply_box_colors(lv_obj_t* obj) {
+  const ColorSchemeData* colors = get_current_colors();
+  lv_obj_set_style_bg_color(obj, lv_color_hex(colors->box_background), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+// Helper function to build localized color scheme options string
+String get_localized_color_options(const LocalizedStrings* strings) {
+  String options = "";
+  for (int i = 0; i < 8; i++) {
+    if (i > 0) options += "\n";
+    options += strings->color_schemes[i];
+  }
+  return options;
 }
 
 SPIClass touchscreenSPI = SPIClass(VSPI);
@@ -108,6 +179,7 @@ static lv_obj_t *unit_switch;
 static lv_obj_t *clock_24hr_switch;
 static lv_obj_t *night_mode_switch;
 static lv_obj_t *language_dropdown;
+static lv_obj_t *color_scheme_dropdown;
 static lv_obj_t *lbl_clock;
 
 // Weather icons
@@ -169,6 +241,9 @@ LV_IMG_DECLARE(image_wintry_mix_rain_snow);
 void create_ui();
 void fetch_and_update_weather();
 void create_settings_window();
+const ColorSchemeData* get_current_colors();
+void apply_background_colors(lv_obj_t* obj);
+void apply_box_colors(lv_obj_t* obj);
 static void screen_event_cb(lv_event_t *e);
 static void settings_event_handler(lv_event_t *e);
 const lv_img_dsc_t *choose_image(int wmo_code, int is_day);
@@ -343,6 +418,7 @@ void setup() {
   uint32_t brightness = prefs.getUInt("brightness", 255);
   use_24_hour = prefs.getBool("use24Hour", false);
   current_language = (Language)prefs.getUInt("language", LANG_EN);
+  current_color_scheme = (ColorScheme)prefs.getUInt("colorScheme", COLOR_BLUE);
   analogWrite(LCD_BACKLIGHT_PIN, brightness);
 
   // Check for Wi-Fi config and request it if not available
@@ -386,10 +462,7 @@ void loop() {
 void wifi_splash_screen() {
   lv_obj_t *scr = lv_scr_act();
   lv_obj_clean(scr);
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x4c8cb9), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(0xa6cdec), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_grad_dir(scr, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  apply_background_colors(scr);
 
   const LocalizedStrings* strings = get_strings(current_language);
   lv_obj_t *lbl = lv_label_create(scr);
@@ -402,10 +475,7 @@ void wifi_splash_screen() {
 
 void create_ui() {
   lv_obj_t *scr = lv_scr_act();
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x4c8cb9), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(0xa6cdec), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_grad_dir(scr, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  apply_background_colors(scr);
 
   // Trigger settings screen on touch
   lv_obj_add_event_cb(scr, screen_event_cb, LV_EVENT_CLICKED, NULL);
@@ -414,9 +484,10 @@ void create_ui() {
   lv_img_set_src(img_today_icon, &image_partly_cloudy);
   lv_obj_align(img_today_icon, LV_ALIGN_TOP_MID, -64, 4);
 
+  const ColorSchemeData* colors = get_current_colors();
   static lv_style_t default_label_style;
   lv_style_init(&default_label_style);
-  lv_style_set_text_color(&default_label_style, lv_color_hex(0xFFFFFF));
+  lv_style_set_text_color(&default_label_style, lv_color_hex(colors->text_primary));
   lv_style_set_text_opa(&default_label_style, LV_OPA_COVER);
 
   const LocalizedStrings* strings = get_strings(current_language);
@@ -430,20 +501,19 @@ void create_ui() {
   lbl_today_feels_like = lv_label_create(scr);
   lv_label_set_text(lbl_today_feels_like, strings->feels_like_temp);
   lv_obj_set_style_text_font(lbl_today_feels_like, get_font_14(), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_text_color(lbl_today_feels_like, lv_color_hex(0xe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(lbl_today_feels_like, lv_color_hex(colors->text_secondary), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_today_feels_like, LV_ALIGN_TOP_MID, 45, 75);
 
   lbl_forecast = lv_label_create(scr);
   lv_label_set_text(lbl_forecast, strings->seven_day_forecast);
   lv_obj_set_style_text_font(lbl_forecast, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_text_color(lbl_forecast, lv_color_hex(0xe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(lbl_forecast, lv_color_hex(colors->text_secondary), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(lbl_forecast, LV_ALIGN_TOP_LEFT, 20, 110);
 
   box_daily = lv_obj_create(scr);
   lv_obj_set_size(box_daily, 220, 180);
   lv_obj_align(box_daily, LV_ALIGN_TOP_LEFT, 10, 135);
-  lv_obj_set_style_bg_color(box_daily, lv_color_hex(0x5e9bc8), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_opa(box_daily, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  apply_box_colors(box_daily);
   lv_obj_set_style_radius(box_daily, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_border_width(box_daily, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_clear_flag(box_daily, LV_OBJ_FLAG_SCROLLABLE);
@@ -467,7 +537,7 @@ void create_ui() {
     lv_obj_align(lbl_daily_high[i], LV_ALIGN_TOP_RIGHT, 0, i * 24);
 
     lv_label_set_text(lbl_daily_low[i], "");
-    lv_obj_set_style_text_color(lbl_daily_low[i], lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(lbl_daily_low[i], lv_color_hex(colors->text_tertiary), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(lbl_daily_low[i], get_font_16(), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_align(lbl_daily_low[i], LV_ALIGN_TOP_RIGHT, -50, i * 24);
 
@@ -478,8 +548,7 @@ void create_ui() {
   box_hourly = lv_obj_create(scr);
   lv_obj_set_size(box_hourly, 220, 180);
   lv_obj_align(box_hourly, LV_ALIGN_TOP_LEFT, 10, 135);
-  lv_obj_set_style_bg_color(box_hourly, lv_color_hex(0x5e9bc8), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_opa(box_hourly, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  apply_box_colors(box_hourly);
   lv_obj_set_style_radius(box_hourly, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_border_width(box_hourly, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_clear_flag(box_hourly, LV_OBJ_FLAG_SCROLLABLE);
@@ -503,7 +572,7 @@ void create_ui() {
     lv_obj_align(lbl_hourly_temp[i], LV_ALIGN_TOP_RIGHT, 0, i * 24);
 
     lv_label_set_text(lbl_precipitation_probability[i], "");
-    lv_obj_set_style_text_color(lbl_precipitation_probability[i], lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(lbl_precipitation_probability[i], lv_color_hex(colors->text_tertiary), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(lbl_precipitation_probability[i], get_font_16(), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_align(lbl_precipitation_probability[i], LV_ALIGN_TOP_RIGHT, -55, i * 24);
 
@@ -516,7 +585,7 @@ void create_ui() {
   // Create clock label in the top-right corner
   lbl_clock = lv_label_create(scr);
   lv_obj_set_style_text_font(lbl_clock, get_font_14(), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_text_color(lbl_clock, lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(lbl_clock, lv_color_hex(colors->text_tertiary), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_label_set_text(lbl_clock, "");
   lv_obj_align(lbl_clock, LV_ALIGN_TOP_RIGHT, -10, 2);
 }
@@ -742,6 +811,10 @@ void create_settings_window() {
   lv_obj_set_width(settings_win, 240);
 
   lv_obj_t *cont = lv_win_get_content(settings_win);
+  
+  // Make content scrollable
+  lv_obj_set_scroll_dir(cont, LV_DIR_VER);
+  lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO);
 
   // Brightness
   lv_obj_t *lbl_b = lv_label_create(cont);
@@ -835,9 +908,27 @@ void create_settings_window() {
   lv_obj_align_to(language_dropdown, lbl_lang, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
   lv_obj_add_event_cb(language_dropdown, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
+  // Color scheme selection
+  lv_obj_t *lbl_color = lv_label_create(cont);
+  lv_label_set_text(lbl_color, strings->color_scheme_label);
+  lv_obj_set_style_text_font(lbl_color, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_align_to(lbl_color, lbl_lang, LV_ALIGN_OUT_BOTTOM_LEFT, 0, vertical_element_spacing);
+
+  color_scheme_dropdown = lv_dropdown_create(cont);
+  String color_options = get_localized_color_options(strings);
+  lv_dropdown_set_options(color_scheme_dropdown, color_options.c_str());
+  lv_dropdown_set_selected(color_scheme_dropdown, current_color_scheme);
+  lv_obj_set_width(color_scheme_dropdown, 120);
+  lv_obj_set_style_text_font(color_scheme_dropdown, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(color_scheme_dropdown, get_font_12(), LV_PART_SELECTED | LV_STATE_DEFAULT);
+  lv_obj_t *color_list = lv_dropdown_get_list(color_scheme_dropdown);
+  lv_obj_set_style_text_font(color_list, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_align_to(color_scheme_dropdown, lbl_color, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
+  lv_obj_add_event_cb(color_scheme_dropdown, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
   // Location search button
   lv_obj_t *btn_change_loc = lv_btn_create(cont);
-  lv_obj_align_to(btn_change_loc, lbl_lang, LV_ALIGN_OUT_BOTTOM_LEFT, 0, vertical_element_spacing);
+  lv_obj_align_to(btn_change_loc, lbl_color, LV_ALIGN_OUT_BOTTOM_LEFT, 0, vertical_element_spacing);
 
   lv_obj_set_size(btn_change_loc, 100, 40);
   lv_obj_add_event_cb(btn_change_loc, change_location_event_cb, LV_EVENT_CLICKED, NULL);
@@ -870,16 +961,25 @@ void create_settings_window() {
   lv_obj_set_style_text_font(lbl_reset, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_center(lbl_reset);
 
-  // Close Settings button
-  btn_close_obj = lv_btn_create(cont);
-  lv_obj_set_size(btn_close_obj, 80, 40);
-  lv_obj_align(btn_close_obj, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+  // Add bottom padding to content so close button doesn't overlap
+  lv_obj_set_style_pad_bottom(cont, 60, LV_PART_MAIN);
+
+  // Close Settings button - make it a full-width bottom bar
+  btn_close_obj = lv_btn_create(settings_win);
+  lv_obj_set_size(btn_close_obj, 240, 45);
+  lv_obj_align(btn_close_obj, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_add_event_cb(btn_close_obj, settings_event_handler, LV_EVENT_CLICKED, NULL);
+  
+  // Style the close button as a bottom bar
+  lv_obj_set_style_radius(btn_close_obj, 0, LV_PART_MAIN);
+  lv_obj_set_style_border_width(btn_close_obj, 1, LV_PART_MAIN);
+  lv_obj_set_style_border_color(btn_close_obj, lv_color_hex(0x888888), LV_PART_MAIN);
+  lv_obj_set_style_border_side(btn_close_obj, LV_BORDER_SIDE_TOP, LV_PART_MAIN);
 
   // Cancel button
   lv_obj_t *lbl_btn = lv_label_create(btn_close_obj);
   lv_label_set_text(lbl_btn, strings->close);
-  lv_obj_set_style_text_font(lbl_btn, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(lbl_btn, get_font_14(), LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_center(lbl_btn);
 }
 
@@ -910,6 +1010,7 @@ static void settings_event_handler(lv_event_t *e) {
     prefs.putBool("use24Hour", use_24_hour);
     prefs.putBool("useNightMode", use_night_mode);
     prefs.putUInt("language", current_language);
+    prefs.putUInt("colorScheme", current_color_scheme);
 
     lv_keyboard_set_textarea(kb, nullptr);
     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
@@ -921,11 +1022,61 @@ static void settings_event_handler(lv_event_t *e) {
     return;
   }
 
+  if (tgt == color_scheme_dropdown && code == LV_EVENT_VALUE_CHANGED) {
+    // Prevent rapid consecutive changes that could cause freezing
+    static unsigned long last_color_change = 0;
+    unsigned long now = millis();
+    if (now - last_color_change < 1000) { // Debounce for 1 second
+      return;
+    }
+    last_color_change = now;
+    
+    current_color_scheme = (ColorScheme)lv_dropdown_get_selected(color_scheme_dropdown);
+    
+    // Show loading spinner
+    lv_obj_t *spinner = lv_spinner_create(lv_scr_act());
+    lv_obj_set_size(spinner, 40, 40);
+    lv_obj_center(spinner);
+    
+    // Force a display update to show the spinner
+    lv_refr_now(lv_disp_get_default());
+    
+    // Small delay to ensure spinner is visible
+    delay(100);
+    
+    // Save preferences first before UI changes
+    prefs.putBool("useFahrenheit", use_fahrenheit);
+    prefs.putBool("use24Hour", use_24_hour);
+    prefs.putBool("useNightMode", use_night_mode);
+    prefs.putUInt("language", current_language);
+    prefs.putUInt("colorScheme", current_color_scheme);
+
+    // Clean up keyboard first
+    lv_keyboard_set_textarea(kb, nullptr);
+    lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+    
+    // Delete settings window
+    if (settings_win != nullptr) {
+      lv_obj_del(settings_win);
+      settings_win = nullptr;
+    }
+    
+    // Give time for cleanup before recreating UI
+    delay(50);
+    
+    // Recreate the main UI with the new color scheme
+    lv_obj_clean(lv_scr_act());
+    create_ui();
+    fetch_and_update_weather();
+    return;
+  }
+
   if (tgt == btn_close_obj && code == LV_EVENT_CLICKED) {
     prefs.putBool("useFahrenheit", use_fahrenheit);
     prefs.putBool("use24Hour", use_24_hour);
     prefs.putBool("useNightMode", use_night_mode);
     prefs.putUInt("language", current_language);
+    prefs.putUInt("colorScheme", current_color_scheme);
 
     lv_keyboard_set_textarea(kb, nullptr);
     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
