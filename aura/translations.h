@@ -2,7 +2,7 @@
 #define TRANSLATIONS_H
 
 // Language support
-enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6 };
+enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6, LANG_ZH_CN = 7 };
 
 struct LocalizedStrings {
   const char* temp_placeholder;
@@ -258,6 +258,34 @@ static const LocalizedStrings strings_it = {
   "Schermo notte"
 };
 
+static const LocalizedStrings strings_zh_cn = {
+  "--°C", "体感", "七日天气预报", "小时预报",
+  "今天", "现在", "上午", "下午", "中午", "无效时间",
+  "亮度:", "位置:", "使用°F:", "24小时:",
+  "保存", "取消", "关闭", "位置", "重置Wi-Fi",
+  "重置", "更改位置", "Aura设置",
+  "城市:", "搜索结果", "例如：北京",
+  "Wi-Fi配置:\n\n"
+  "请将您的手机或\n"
+  "笔记本电脑连接到\n"
+  "临时Wi-Fi接入点\n"
+  DEFAULT_CAPTIVE_SSID
+  "\n"
+  "进行配置。\n\n"
+  "如果连接后没有看到\n"
+  "配置界面，请在您的\n"
+  "网页浏览器中访问\n"
+  "http://192.168.4.1",
+  "您确定要重置\n"
+  "Wi-Fi凭据吗？\n\n"
+  "您需要重新连接到SSID " DEFAULT_CAPTIVE_SSID
+  " 使用您的手机或浏览器\n"
+  "来重新配置Wi-Fi凭据。",
+  "语言:",
+  {"周日", "周一", "周二", "周三", "周四", "周五", "周六"},
+  "夜间调暗"
+};
+
 static const LocalizedStrings* get_strings(Language current_language) {
   switch (current_language) {
     case LANG_ES: return &strings_es;
@@ -266,6 +294,7 @@ static const LocalizedStrings* get_strings(Language current_language) {
     case LANG_TR: return &strings_tr;
     case LANG_SV: return &strings_sv;
     case LANG_IT: return &strings_it;
+    case LANG_ZH_CN: return &strings_zh_cn;
     default: return &strings_en;
   }
 }

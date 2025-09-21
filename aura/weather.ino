@@ -40,22 +40,39 @@ static Language current_language = LANG_EN;
 
 // Font selection based on language
 const lv_font_t* get_font_12() {
+  if (current_language == LANG_ZH_CN) {
+    // For Chinese, we'll use the Latin font as fallback
+    // In a full implementation, you would include Chinese font files here
+    return &lv_font_montserrat_latin_12;
+  }
   return &lv_font_montserrat_latin_12;
 }
 
 const lv_font_t* get_font_14() {
+  if (current_language == LANG_ZH_CN) {
+    return &lv_font_montserrat_latin_14;
+  }
   return &lv_font_montserrat_latin_14;
 }
 
 const lv_font_t* get_font_16() {
+  if (current_language == LANG_ZH_CN) {
+    return &lv_font_montserrat_latin_16;
+  }
   return &lv_font_montserrat_latin_16;
 }
 
 const lv_font_t* get_font_20() {
+  if (current_language == LANG_ZH_CN) {
+    return &lv_font_montserrat_latin_20;
+  }
   return &lv_font_montserrat_latin_20;
 }
 
 const lv_font_t* get_font_42() {
+  if (current_language == LANG_ZH_CN) {
+    return &lv_font_montserrat_latin_42;
+  }
   return &lv_font_montserrat_latin_42;
 }
 
@@ -825,7 +842,7 @@ void create_settings_window() {
   lv_obj_align_to(lbl_lang, lbl_loc_l, LV_ALIGN_OUT_BOTTOM_LEFT, 0, vertical_element_spacing);
 
   language_dropdown = lv_dropdown_create(cont);
-  lv_dropdown_set_options(language_dropdown, "English\nEspañol\nDeutsch\nFrançais\nTürkçe\nSvenska\nItaliano");
+  lv_dropdown_set_options(language_dropdown, "English\nEspañol\nDeutsch\nFrançais\nTürkçe\nSvenska\nItaliano\n中文简体");
   lv_dropdown_set_selected(language_dropdown, current_language);
   lv_obj_set_width(language_dropdown, 120);
   lv_obj_set_style_text_font(language_dropdown, get_font_12(), LV_PART_MAIN | LV_STATE_DEFAULT);
