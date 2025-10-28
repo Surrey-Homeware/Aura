@@ -2,7 +2,7 @@
 #define TRANSLATIONS_H
 
 // Language support
-enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6 };
+enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6, LANG_RU = 7 };
 
 struct LocalizedStrings {
   const char* temp_placeholder;
@@ -258,6 +258,35 @@ static const LocalizedStrings strings_it = {
   "Schermo notte"
 };
 
+static const LocalizedStrings strings_ru = {
+  "--°C", "Ощущается как", "ПРОГНОЗ НА 7 ДНЕЙ", "ПОЧАСОВОЙ ПРОГНОЗ",
+  "Сегодня", "Сейчас", "am", "pm", "Полдень", "Неправильное время",
+  "Яркость:", "Локация:", "Использовать °F:", "24hr:",
+  "Сохранить", "Отменить", "Закрыть", "Локация", "Сброс Wi-Fi",
+  "Сброс", "Изменить локацию", "Настройки Aura",
+  "Город:", "Результаты поиска", "напр. Лондон",
+  "Конфигурация Wi-Fi:\n\n"
+  "Пожалуйста подключите Ваш\n"
+  "смартфон или ноутбук\n"
+  "к временной точке доступа Wi-Fi"
+  DEFAULT_CAPTIVE_SSID
+  "\n"
+  "Настроить.\n\n"
+  "Если Вы не видете \n"
+  "экран настройки \n"
+  "после подключения,\n"
+  "посетите http://192.168.4.1\n"
+  "в Вашем браузере.",
+  "Вы уверены в сбросе"
+  "логина и пароля Wi-Fi?\n\n"
+  "Вам нужно подключиться заново к Wi-Fi SSID " DEFAULT_CAPTIVE_SSID
+  " с Вашего смартфона или браузера для "
+  "изменения логина и пароля Wi-Fi.",
+  "Язык:",
+  {"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"},
+  "Потушить экран ночью"
+};
+
 static const LocalizedStrings* get_strings(Language current_language) {
   switch (current_language) {
     case LANG_ES: return &strings_es;
@@ -266,6 +295,7 @@ static const LocalizedStrings* get_strings(Language current_language) {
     case LANG_TR: return &strings_tr;
     case LANG_SV: return &strings_sv;
     case LANG_IT: return &strings_it;
+    case LANG_IT: return &strings_ru;
     default: return &strings_en;
   }
 }
