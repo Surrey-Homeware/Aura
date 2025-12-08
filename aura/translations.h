@@ -2,7 +2,7 @@
 #define TRANSLATIONS_H
 
 // Language support
-enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6 };
+enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6, LANG_PT_BR = 7 };
 
 struct LocalizedStrings {
   const char* temp_placeholder;
@@ -175,7 +175,7 @@ static const LocalizedStrings strings_tr = {
   "Wi-Fi Yapilandirmasi:\n\n"
   "Lütfen telefonunuzu veya\n"
   "bilgisayarinizi geçici Wi-Fi\n"
-  "erişim noktasina bağlayin "
+  "erişim noktasin a bağlayin "
   DEFAULT_CAPTIVE_SSID
   "\n"
   "yapilandirmak için.\n\n"
@@ -258,6 +258,36 @@ static const LocalizedStrings strings_it = {
   "Schermo notte"
 };
 
+static const LocalizedStrings strings_pt_br = {
+  "--°C", "Sensação térmica", "PREVISÃO 7 DIAS", "PREVISÃO HORÁRIA",
+  "Hoje", "Agora", "am", "pm", "Meio-dia", "Hora inválida",
+  "Brilho:", "Localização:", "Usar °F:", "24h:",
+  "Salvar", "Cancelar", "Fechar", "Localização", "Redefinir Wi-Fi",
+  "Redefinir", "Alterar Localização", "Configurações Aura",
+  "Cidade:", "Resultados da pesquisa", "ex. São Paulo",
+  "Configuração do Wi-Fi:\n\n"
+  "Conecte seu telefone\n"
+  "ou laptop ao ponto de\n"
+  "acesso Wi‑Fi temporário "
+  DEFAULT_CAPTIVE_SSID
+  "\n"
+  "para configurar.\n\n"
+  "Se você não vir a\n"
+  "tela de configuração\n"
+  "após conectar,\n"
+  "acesse http://192.168.4.1\n"
+  "no seu navegador.",
+  "Tem certeza de que deseja\n"
+  "redefinir as credenciais\n"
+  "do Wi‑Fi?\n\n"
+  "Você precisará reconectar-se ao SSID " DEFAULT_CAPTIVE_SSID
+  " com seu telefone ou navegador para\n"
+  "reconfigurar as credenciais do Wi‑Fi.",
+  "Idioma:",
+  {"Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"},
+  "Escurecer tela à noite"
+};
+
 static const LocalizedStrings* get_strings(Language current_language) {
   switch (current_language) {
     case LANG_ES: return &strings_es;
@@ -266,6 +296,7 @@ static const LocalizedStrings* get_strings(Language current_language) {
     case LANG_TR: return &strings_tr;
     case LANG_SV: return &strings_sv;
     case LANG_IT: return &strings_it;
+    case LANG_PT_BR: return &strings_pt_br;
     default: return &strings_en;
   }
 }
