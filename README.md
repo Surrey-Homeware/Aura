@@ -30,6 +30,22 @@ The icons are not included in that license. See "Thanks" below for details on th
 - XPT2046_Touchscreen 1.4
 - lvgl 9.2.2
 
+### PlatformIO
+
+Alternatively, you can build and upload using [PlatformIO](https://platformio.org/) in Visual Studio Code:
+
+   1. Install [Visual Studio Code](https://code.visualstudio.com/) and the [PlatformIO IDE extension](https://platformio.org/install/ide?install=vscode)
+   1. Open the project folder in VS Code (double-click "aura.code-workspace")
+   1. PlatformIO will automatically detect and install required dependencies
+   1. Click "Build" to compile and "Upload" to flash to your device
+
+PlatformIO handles library management and board configuration automatically, making it an easier alternative to Arduino IDE.
+But the code is still valif for the Arduino IDE.
+   
+Currently used/tested versions:
+   - Visual Studio Code: Version 1.109.5 (Windows 11)
+   - PlatformIO, Version 3.3.4
+
 ### Thanks & Credits
 
 - Weather icons from https://github.com/mrdarrengriffin/google-weather-icons/tree/main/v2

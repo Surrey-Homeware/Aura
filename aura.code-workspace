@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"name": "Aura",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"esp_eeprom.h": "c",
+			"array": "cpp",
+			"istream": "cpp",
+			"memory": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"variant": "cpp",
+			"xlocmes": "cpp",
+			"xlocmon": "cpp",
+			"xlocnum": "cpp",
+			"xloctime": "cpp",
+			"*.tcc": "cpp",
+			"functional": "cpp",
+			"ranges": "cpp"
+		}
+	}
+}

@@ -169,7 +169,7 @@ LV_IMG_DECLARE(image_wintry_mix_rain_snow);
 void create_ui();
 void fetch_and_update_weather();
 void create_settings_window();
-static void screen_event_cb(lv_event_t *e);
+void screen_event_cb(lv_event_t *e);
 static void settings_event_handler(lv_event_t *e);
 const lv_img_dsc_t *choose_image(int wmo_code, int is_day);
 const lv_img_dsc_t *choose_icon(int wmo_code, int is_day);
