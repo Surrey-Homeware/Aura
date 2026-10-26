@@ -656,6 +656,12 @@
 
 /*API for memory-mapped file access. */
 #define LV_USE_FS_MEMFS 0
+
+/*API for LittleFS on Arduino ESP32 (used for the radar image)*/
+#define LV_USE_FS_ARDUINO_ESP_LITTLEFS 1
+#if LV_USE_FS_ARDUINO_ESP_LITTLEFS
+    #define LV_FS_ARDUINO_ESP_LITTLEFS_LETTER 'L'
+#endif
 #if LV_USE_FS_MEMFS
     #define LV_FS_MEMFS_LETTER '\0'     /*Set an upper cased letter on which the drive will accessible (e.g. 'A')*/
 #endif

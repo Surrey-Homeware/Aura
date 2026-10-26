@@ -29,6 +29,7 @@ The icons are not included in that license. See "Thanks" below for details on th
 - WifiManager 2.0.17
 - XPT2046_Touchscreen 1.4
 - lvgl 9.2.2
+- PNGdec 1.1.6 (radar map)
 
 ### Thanks & Credits
 

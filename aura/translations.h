@@ -35,6 +35,18 @@ struct LocalizedStrings {
   const char* language_label;
   const char* weekdays[7];
   const char* use_night_mode;
+  const char* updated;
+  const char* current_conditions;
+  const char* wind;
+  const char* gusts;
+  const char* humidity;
+  const char* uv_index;
+  const char* sunrise;
+  const char* sunset;
+  const char* precip_today;
+  const char* night_start;
+  const char* night_end;
+  const char* air_quality;
 };
 
 #define DEFAULT_CAPTIVE_SSID "Aura"
@@ -65,7 +77,11 @@ static const LocalizedStrings strings_en = {
   "reconfigure Wi-Fi credentials.",
   "Language:",
   {"Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"},
-  "Dim screen at night"
+  "Dim screen at night",
+  "Updated",
+  "CURRENT CONDITIONS", "Wind", "Gusts", "Humidity", "UV index", "Sunrise", "Sunset", "Precip. today",
+  "Start:", "End:",
+  "Air quality"
 };
 
 static const LocalizedStrings strings_es = {
@@ -96,7 +112,11 @@ static const LocalizedStrings strings_es = {
   "credenciales Wi-Fi.",
   "Idioma:",
   {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"},
-  "Pantalla noche"
+  "Pantalla noche",
+  "Actualizado",
+  "CONDICIONES ACTUALES", "Viento", "Ráfagas", "Humedad", "Índice UV", "Amanecer", "Atardecer", "Precip. hoy",
+  "Inicio:", "Fin:",
+  "Calidad aire"
 };
 
 static const LocalizedStrings strings_de = {
@@ -129,7 +149,11 @@ static const LocalizedStrings strings_de = {
   "neu zu konfigurieren.",
   "Sprache:",
   {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"},
-  "Nacht-Dimmen"
+  "Nacht-Dimmen",
+  "Aktualisiert",
+  "AKTUELLES WETTER", "Wind", "Böen", "Luftfeuchte", "UV-Index", "Sonnenaufgang", "Sonnenuntergang", "Niederschlag",
+  "Beginn:", "Ende:",
+  "Luftqualität"
 };
 
 static const LocalizedStrings strings_fr = {
@@ -162,7 +186,11 @@ static const LocalizedStrings strings_fr = {
   "les identifiants Wi-Fi.",
   "Langue:",
   {"Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"},
-  "Nuit écran"
+  "Nuit écran",
+  "Mis à jour",
+  "CONDITIONS ACTUELLES", "Vent", "Rafales", "Humidité", "Indice UV", "Lever du soleil", "Coucher du soleil", "Précip. auj.",
+  "Début:", "Fin:",
+  "Qualité air"
 };
 
 static const LocalizedStrings strings_tr = {
@@ -192,7 +220,11 @@ static const LocalizedStrings strings_tr = {
   "gerekecek.",
   "Dil:",
   {"Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"},
-  "Gece kısık"
+  "Gece kısık",
+  "Güncellendi",
+  "MEVCUT KOŞULLAR", "Rüzgar", "Ani rüzgar", "Nem", "UV indeksi", "Gün doğumu", "Gün batımı", "Yağış bugün",
+  "Başla:", "Bitiş:",
+  "Hava kalitesi"
 };
 
 static const LocalizedStrings strings_sv = {
@@ -226,7 +258,11 @@ static const LocalizedStrings strings_sv = {
   "autentiseringsuppgifter.",
   "Sprak:",
   {"Sön", "Man", "Tis", "Ons", "Tor", "Fre", "Lör"},
-  "Nattdämpning"
+  "Nattdämpning",
+  "Uppdaterad",
+  "AKTUELLT VÄDER", "Vind", "Vindbyar", "Luftfuktighet", "UV-index", "Soluppgång", "Solnedgång", "Nederbörd idag",
+  "Start:", "Slut:",
+  "Luftkvalitet"
 };
 
 static const LocalizedStrings strings_it = {
@@ -255,7 +291,11 @@ static const LocalizedStrings strings_it = {
   "riconfigurare le credenziali Wi-Fi.",
   "Lingua:",
   {"Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"},
-  "Schermo notte"
+  "Schermo notte",
+  "Aggiornato",
+  "CONDIZIONI ATTUALI", "Vento", "Raffiche", "Umidità", "Indice UV", "Alba", "Tramonto", "Precip. oggi",
+  "Inizio:", "Fine:",
+  "Qualità aria"
 };
 
 static const LocalizedStrings* get_strings(Language current_language) {
