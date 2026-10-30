@@ -2,7 +2,7 @@
 #define TRANSLATIONS_H
 
 // Language support
-enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6 };
+enum Language { LANG_EN = 0, LANG_ES = 1, LANG_DE = 2, LANG_FR = 3, LANG_TR = 4, LANG_SV = 5, LANG_IT = 6, LANG_FI = 7 };
 
 struct LocalizedStrings {
   const char* temp_placeholder;
@@ -258,6 +258,31 @@ static const LocalizedStrings strings_it = {
   "Schermo notte"
 };
 
+static const LocalizedStrings strings_fi = {
+  "--°C", "Tuntuu kuin", "7 VRK ENNUSTE", "TUNTIENNUSTE",
+  "Tänään", "Nyt", "ap", "ip", "12", "Virheellinen tunti",
+  "Kirkkaus:", "Sijainti:", "°F:", "24 h:",
+  "Tallenna", "Peruuta", "Sulje", "Sijainti", "Wi-Fi-nollaus",
+  "Nollaa", "Vaihda sijainti", "Auran asetukset",
+  "Paikka:", "Hakutulokset", "esim. Lontoo",
+  "Wi-Fi-asetukset:\n\n"
+  "Yhdistä puhelin tai\n"
+  "tietokone verkkoon\n"
+  DEFAULT_CAPTIVE_SSID 
+  "\n"
+  "tehdäksesi asetukset.\n\n"
+  "Jos asetussivu ei\n"
+  "avaudu, avaa selaimessa\n"
+  "http://192.168.4.1",
+  "Nollataanko Wi-Fi-asetukset?\n\n"
+  "Yhdistä nollauksen jälkeen\n"
+  "verkkoon " DEFAULT_CAPTIVE_SSID "\n"
+  "ja määritä Wi-Fi uudelleen.",
+  "Kieli:",
+  {"Su", "Ma", "Ti", "Ke", "To", "Pe", "La"},
+  "Näytön himmennys yöksi"
+};
+
 static const LocalizedStrings* get_strings(Language current_language) {
   switch (current_language) {
     case LANG_ES: return &strings_es;
@@ -266,6 +291,7 @@ static const LocalizedStrings* get_strings(Language current_language) {
     case LANG_TR: return &strings_tr;
     case LANG_SV: return &strings_sv;
     case LANG_IT: return &strings_it;
+    case LANG_FI: return &strings_fi;
     default: return &strings_en;
   }
 }
