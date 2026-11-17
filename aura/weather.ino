@@ -234,7 +234,7 @@ static void update_clock(lv_timer_t *timer) {
 
   check_for_night_mode();
 
-  if (!getLocalTime(&timeinfo)) return;
+  if (!getLocalTime(&timeinfo, 0)) return;
 
   const LocalizedStrings* strings = get_strings(current_language);
   char buf[16];
@@ -547,17 +547,23 @@ void create_ui() {
 
 void populate_results_dropdown() {
   dd_opts[0] = '\0';
+  size_t used = 0;
   for (JsonObject item : geoResults) {
-    strcat(dd_opts, item["name"].as<const char *>());
-    if (item["admin1"]) {
-      strcat(dd_opts, ", ");
-      strcat(dd_opts, item["admin1"].as<const char *>());
+    const char *name = item["name"].as<const char *>();
+    if (!name) continue;
+    const char *admin = item["admin1"].as<const char *>();
+    // Stop before overflowing the fixed buffer (dropdown copies nothing: it's static)
+    int n = snprintf(dd_opts + used, sizeof(dd_opts) - used, "%s%s%s\n",
+                     name, admin ? ", " : "", admin ? admin : "");
+    if (n < 0 || (size_t)n >= sizeof(dd_opts) - used) {
+      dd_opts[used] = '\0';
+      break;
     }
-
-    strcat(dd_opts, "\n");
+    used += n;
   }
+  if (used > 0 && dd_opts[used - 1] == '\n') dd_opts[used - 1] = '\0';  // no trailing blank row
 
-  if (geoResults.size() > 0) {
+  if (used > 0) {
     lv_dropdown_set_options_static(results_dd, dd_opts);
     lv_obj_add_flag(results_dd, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_bg_color(btn_close_loc, lv_palette_main(LV_PALETTE_GREEN), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -567,11 +573,24 @@ void populate_results_dropdown() {
   }
 }
 
+static void close_location_window() {
+  if (kb) {
+    lv_keyboard_set_textarea(kb, nullptr);
+    lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+  }
+  lv_obj_del(location_win);
+  location_win = nullptr;
+  loc_ta = nullptr;
+  results_dd = nullptr;
+}
+
 static void location_save_event_cb(lv_event_t *e) {
   JsonArray *pres = static_cast<JsonArray *>(lv_event_get_user_data(e));
   uint16_t idx = lv_dropdown_get_selected(results_dd);
 
+  if (pres->isNull() || idx >= pres->size()) return;
   JsonObject obj = (*pres)[idx];
+  if (obj.isNull() || !obj["name"].is<const char *>()) return;
   double lat = obj["latitude"].as<double>();
   double lon = obj["longitude"].as<double>();
 
@@ -597,13 +616,11 @@ static void location_save_event_cb(lv_event_t *e) {
   lv_label_set_text(lbl_loc, opts.c_str());
   fetch_and_update_weather();
 
-  lv_obj_del(location_win);
-  location_win = nullptr;
+  close_location_window();
 }
 
 static void location_cancel_event_cb(lv_event_t *e) {
-  lv_obj_del(location_win);
-  location_win = nullptr;
+  close_location_window();
 }
 
 void screen_event_cb(lv_event_t *e) {
@@ -938,7 +955,13 @@ static void settings_event_handler(lv_event_t *e) {
     lv_keyboard_set_textarea(kb, nullptr);
     lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
     
-    // Recreate the main UI with the new language
+    // lv_obj_clean() deletes the keyboard and dialogs; drop stale pointers and
+    // the screen callback so create_ui() doesn't register a duplicate.
+    kb = nullptr;
+    loc_ta = nullptr;
+    results_dd = nullptr;
+    location_win = nullptr;
+    lv_obj_remove_event_cb(lv_scr_act(), screen_event_cb);
     lv_obj_clean(lv_scr_act());
     create_ui();
     fetch_and_update_weather();
@@ -964,7 +987,7 @@ static void settings_event_handler(lv_event_t *e) {
 // Screen dimming functions implementation
 bool night_mode_should_be_active() {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) return false;
+  if (!getLocalTime(&timeinfo, 0)) return false;
 
   if (!use_night_mode) return false;
   
@@ -1009,6 +1032,15 @@ void handle_temp_screen_wakeup_timeout(lv_timer_t *timer) {
 
 void do_geocode_query(const char *q) {
   geoDoc.clear();
+  geoResults = JsonArray();
+  if (results_dd) {
+    lv_dropdown_set_options(results_dd, "");
+    lv_obj_clear_flag(results_dd, LV_OBJ_FLAG_CLICKABLE);
+  }
+  if (btn_close_loc) {
+    lv_obj_set_style_bg_color(btn_close_loc, lv_palette_main(LV_PALETTE_GREY), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_clear_flag(btn_close_loc, LV_OBJ_FLAG_CLICKABLE);
+  }
   String url = String("https://geocoding-api.open-meteo.com/v1/search?name=") + urlencode(q) + "&count=15";
 
   HTTPClient http;
@@ -1031,10 +1063,13 @@ void do_geocode_query(const char *q) {
 void fetch_and_update_weather() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi no longer connected. Attempting to reconnect...");
+    // Reconnect with saved credentials only. autoConnect() would open a
+    // config portal with no timeout and hang the device after a router outage.
     WiFi.disconnect();
-    WiFiManager wm;  
-    wm.autoConnect(DEFAULT_CAPTIVE_SSID);
-    delay(1000);  
+    WiFi.begin();
+    for (int i = 0; i < 20 && WiFi.status() != WL_CONNECTED; i++) {
+      delay(500);
+    }
     if (WiFi.status() != WL_CONNECTED) { 
       Serial.println("WiFi connection still unavailable.");
       return;   
