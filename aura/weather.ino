@@ -165,8 +165,10 @@ LV_IMG_DECLARE(image_strong_tstorms);
 LV_IMG_DECLARE(image_sunny);
 LV_IMG_DECLARE(image_tornado);
 LV_IMG_DECLARE(image_wintry_mix_rain_snow);
+LV_IMG_DECLARE(image_grateful_dead);
 
 void create_ui();
+void show_startup_splash(uint32_t ms);
 void fetch_and_update_weather();
 void create_settings_window();
 static void screen_event_cb(lv_event_t *e);
@@ -345,6 +347,8 @@ void setup() {
   current_language = (Language)prefs.getUInt("language", LANG_EN);
   analogWrite(LCD_BACKLIGHT_PIN, brightness);
 
+  show_startup_splash(2000);
+
   // Check for Wi-Fi config and request it if not available
   WiFiManager wm;
   wm.setAPCallback(apModeCallback);
@@ -355,6 +359,26 @@ void setup() {
   lv_obj_clean(lv_scr_act());
   create_ui();
   fetch_and_update_weather();
+}
+
+void show_startup_splash(uint32_t ms) {
+  lv_obj_t *scr = lv_scr_act();
+  lv_obj_clean(scr);
+  lv_obj_set_style_bg_color(scr, lv_color_hex(0x4c8cb9), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_grad_color(scr, lv_color_hex(0xa6cdec), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_grad_dir(scr, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *img = lv_image_create(scr);
+  lv_image_set_src(img, &image_grateful_dead);
+  lv_obj_align(img, LV_ALIGN_CENTER, 0, -20);
+
+  uint32_t start = millis();
+  while (millis() - start < ms) {
+    lv_tick_inc(5);
+    lv_timer_handler();
+    delay(5);
+  }
 }
 
 void flush_wifi_splashscreen(uint32_t ms = 200) {

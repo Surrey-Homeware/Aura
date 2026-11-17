@@ -5,6 +5,16 @@ Aura is a simple weather widget that runs on ESP32-2432S028R ILI9341 devices wit
 This is just the source code for the project. This project includes a case design and assembly instructions. The complete instructions are available
 here: https://makerworld.com/en/models/1382304-aura-smart-weather-forecast-display
 
+### Startup splash
+
+On boot, Aura shows the Grateful Dead "Steal Your Face" logo (a trademarked image, used here without permission in a private test repo) for 2 seconds before connecting to Wi-Fi. Preview (240x320 screen, 2x scale):
+
+<img src="docs/preview.png" alt="Startup splash preview" width="240">
+
+Logo source: [File:LightningBoltSkull.gif on Wikipedia](https://en.wikipedia.org/wiki/File:LightningBoltSkull.gif) (non-free logo, owned by Grateful Dead Productions; originally credited to http://www.thebear.org/GDLogo.html, which is now offline; design by Bob Thomas and Owsley "Bear" Stanley).
+
+The image lives in `aura/image_grateful_dead.c` (LVGL RGB565A8, 140px wide).
+
 ### License
 
 You can use the weather.ino code here under the terms of the GPL 3.0 license.
