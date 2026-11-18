@@ -11,13 +11,11 @@ here: https://makerworld.com/en/models/1382304-aura-smart-weather-forecast-displ
 
 ### Startup splash
 
-On boot, Aura shows the Grateful Dead "Steal Your Face" logo (a trademarked image, used here without permission; remove it before reusing this code elsewhere) for 2 seconds before connecting to Wi-Fi. Preview (240x320 screen, 2x scale):
+On boot, Aura shows the Grateful Dead "Skeleton and Roses" artwork for 2 seconds before connecting to Wi-Fi. This is copyrighted artwork used without permission; remove it before reusing this code elsewhere. Preview (240x320 screen, 2x scale):
 
 <img src="docs/preview.png" alt="Startup splash preview" width="240">
 
-Logo source: [File:LightningBoltSkull.gif on Wikipedia](https://en.wikipedia.org/wiki/File:LightningBoltSkull.gif) (non-free logo, owned by Grateful Dead Productions; originally credited to http://www.thebear.org/GDLogo.html, which is now offline; design by Bob Thomas and Owsley "Bear" Stanley).
-
-The image lives in `aura/image_grateful_dead.c` (LVGL RGB565A8, 140px wide).
+The artwork is the 1966 Mouse & Kelley "Skeleton and Roses" design, itself adapted from Edmund J. Sullivan's 1913 illustration for the Rubaiyat of Omar Khayyam. The image used here is a photo of a tapestry print, converted for LVGL (RGB565A8, 160px wide) in `aura/image_grateful_dead.c`.
 
 ### License
 
