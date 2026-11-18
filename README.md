@@ -15,7 +15,20 @@ On boot, Aura shows the Grateful Dead "Skeleton and Roses" artwork for 2 seconds
 
 <img src="docs/preview.png" alt="Startup splash preview" width="240">
 
-The artwork is the 1966 Mouse & Kelley "Skeleton and Roses" design, itself adapted from Edmund J. Sullivan's 1913 illustration for the Rubaiyat of Omar Khayyam. The image used here is a photo of a tapestry print, converted for LVGL (RGB565A8, 240x320, cropped to fill the screen) in `aura/image_grateful_dead.c`.
+This copy is a photo of a tapestry print of that design, converted for LVGL (RGB565A8, 240x320, cropped to fill the screen) in `aura/image_grateful_dead.c`. The artwork is copyrighted and used here without permission.
+
+#### About the artwork: Bertha and the Victorian print
+
+The skeleton is known among Deadheads as **Bertha**. It began as a pen-and-ink plate by the British illustrator [Edmund J. Sullivan](https://en.wikipedia.org/wiki/E._J._Sullivan) (1869-1933) for a 1913 edition of Edward FitzGerald's translation of *The Rubaiyat of Omar Khayyam*. In 1966, San Francisco poster artists Alton Kelley and Stanley Mouse found the drawing in a library book and reworked it, in color, into a poster for a Grateful Dead show at the Avalon Ballroom. It reappeared on the band's 1971 live album, *Grateful Dead*, which fans call *Skull & Roses*. The nickname "Bertha" is usually credited to the song of that name, which opens that album, though the exact origin of the name is disputed.
+
+I could not confirm which verse Sullivan's rose-crowned skeleton plate illustrates. The Morgan Library catalogs another Sullivan skeleton drawing for the quatrain below, so here it is as a stand-in (FitzGerald's translation, public domain):
+
+> And we, that now make merry in the Room
+> They left, and Summer dresses in new bloom,
+> Ourselves must we beneath the Couch of Earth
+> Descend, ourselves to make a Couch - for whom?
+
+Sources: [Music Mascots Archive](https://musicmascotsarchive.com/mascot/bertha), [Danny Scope](https://dannyscopemusic.substack.com/p/we-that-now-make-merry-in-the-room), [Vinyl Connection](https://vinylconnection.com.au/2014/04/04/omar-and-the-dead/), [The Morgan Library](https://themorgan.org/node/39601), [Victorian Web](https://victorianweb.org/art/illustration/sullivan/rubaiyat.html).
 
 ### License
 
