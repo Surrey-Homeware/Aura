@@ -2,12 +2,16 @@
 
 Aura is a simple weather widget that runs on ESP32-2432S028R ILI9341 devices with a 2.8" screen. These devices are sometimes called a "CYD" or Cheap Yellow Display.
 
+> **This is a fork of [Surrey-Homeware/Aura](https://github.com/Surrey-Homeware/Aura).** Huge thanks and credit to the Surrey-Homeware team for creating Aura: a delightfully polished little weather display, with a great case design, clear assembly instructions, and clean, approachable code that made forking it a pleasure. All the hard design and engineering work is theirs. If you want the original, supported project, go use and star theirs.
+>
+> This fork exists to customize Aura for personal use (a custom startup splash, a web installer) and to fix some bugs found along the way (crashes after changing language, UI freezes while waiting on NTP, a Wi-Fi reconnect that could hang forever, and bad geocode search results). Releases and a changelog are managed with [release-please](https://github.com/googleapis/release-please).
+
 This is just the source code for the project. This project includes a case design and assembly instructions. The complete instructions are available
 here: https://makerworld.com/en/models/1382304-aura-smart-weather-forecast-display
 
 ### Startup splash
 
-On boot, Aura shows the Grateful Dead "Steal Your Face" logo (a trademarked image, used here without permission in a private test repo) for 2 seconds before connecting to Wi-Fi. Preview (240x320 screen, 2x scale):
+On boot, Aura shows the Grateful Dead "Steal Your Face" logo (a trademarked image, used here without permission; remove it before reusing this code elsewhere) for 2 seconds before connecting to Wi-Fi. Preview (240x320 screen, 2x scale):
 
 <img src="docs/preview.png" alt="Startup splash preview" width="240">
 
