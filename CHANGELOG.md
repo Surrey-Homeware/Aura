@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 (2026-11-17)
+
+### Features
+
+* Swap the startup splash to the Grateful Dead "Skeleton and Roses" artwork
+* Scale the splash to fill the full 240x320 screen (cropped at the bottom, skull kept in frame)
+* Rebuild the installer firmware with the new splash
+
 ## 0.1.0 (2026-11-17)
 
 First release of this fork of [Surrey-Homeware/Aura](https://github.com/Surrey-Homeware/Aura).
