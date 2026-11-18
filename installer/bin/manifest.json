@@ -1,0 +1,11 @@
+{
+  "name": "Aura",
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "aura-firmware.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

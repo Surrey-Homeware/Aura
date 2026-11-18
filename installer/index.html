@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aura Installer</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>Install Aura</h1>
+  <p>Flash the Aura weather display firmware to an ESP32-2432S028R (2.8" ILI9341 "CYD") from your browser.
+     Works in Chrome or Edge only.</p>
+  <ol>
+    <li>Plug the board into your computer's USB port with a data cable.</li>
+    <li>Click <b>Install</b> below and choose the "USB Serial" port.</li>
+    <li>After it finishes, join the <b>Aura</b> Wi-Fi network and open <code>http://192.168.4.1</code> to enter your Wi-Fi details.</li>
+  </ol>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <esp-web-install-button manifest="bin/manifest.json"></esp-web-install-button>
+  <h2>Stuck at "Preparing to Install"?</h2>
+  <ul>
+    <li>Pick the port labeled "USB Serial".</li>
+    <li>Hold BOOT, tap RST, then release BOOT to enter flash mode.</li>
+    <li>On boards with both USB-C and Micro-USB, try each port, or try a different cable.</li>
+  </ul>
+</body>
+</html>
