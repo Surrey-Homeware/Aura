@@ -15,7 +15,7 @@ On boot, Aura shows the Grateful Dead "Skeleton and Roses" artwork for 2 seconds
 
 <img src="docs/preview.png" alt="Startup splash preview" width="240">
 
-The artwork is the 1966 Mouse & Kelley "Skeleton and Roses" design, itself adapted from Edmund J. Sullivan's 1913 illustration for the Rubaiyat of Omar Khayyam. The image used here is a photo of a tapestry print, converted for LVGL (RGB565A8, 160px wide) in `aura/image_grateful_dead.c`.
+The artwork is the 1966 Mouse & Kelley "Skeleton and Roses" design, itself adapted from Edmund J. Sullivan's 1913 illustration for the Rubaiyat of Omar Khayyam. The image used here is a photo of a tapestry print, converted for LVGL (RGB565A8, 240x320, cropped to fill the screen) in `aura/image_grateful_dead.c`.
 
 ### License
 

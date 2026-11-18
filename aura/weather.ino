@@ -371,7 +371,7 @@ void show_startup_splash(uint32_t ms) {
 
   lv_obj_t *img = lv_image_create(scr);
   lv_image_set_src(img, &image_grateful_dead);
-  lv_obj_align(img, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_align(img, LV_ALIGN_TOP_LEFT, 0, 0);
 
   uint32_t start = millis();
   while (millis() - start < ms) {
